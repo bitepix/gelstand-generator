@@ -6,11 +6,12 @@
 // значение остаётся в поле, а поле уходит в Error (ТЗ 5.2). Пустое поле
 // тоже остаётся пустым: иначе ERR-01 и ERR-03/04 никогда бы не возникли.
 
-import { SIZE_MIN, SIZE_DECIMALS, COUNT_MIN } from '../constants.js'
+import { SIZE_MIN, DEPTH_MIN, SIZE_DECIMALS, COUNT_MIN } from '../constants.js'
 
-/** Вид поля по его имени. */
+/** Вид поля по его имени. У глубины свой минимум, поэтому свой вид. */
 export function fieldKind(field) {
-  return field === 'nx' || field === 'ny' ? 'count' : 'size'
+  if (field === 'nx' || field === 'ny') return 'count'
+  return field === 'depth' ? 'depth' : 'size'
 }
 
 /**
@@ -31,7 +32,7 @@ export function toField(n) {
  * Приводит сырую строку поля к допустимому виду. ТЗ 5.1.
  *
  * @param {string} raw   что ввёл пользователь
- * @param {'size'|'count'} kind
+ * @param {'size'|'depth'|'count'} kind
  * @returns {string}     нормализованная строка; пустая строка остаётся пустой
  */
 export function normalize(raw, kind) {
@@ -49,7 +50,8 @@ export function normalize(raw, kind) {
   // toFixed гасит двоичный хвост: без него 19,6 × 100 = 1960.0000000000002
   // и ceil дал бы 19,61.
   const rounded = Math.ceil(Number((n * factor).toFixed(6))) / factor
-  return toField(rounded < SIZE_MIN ? SIZE_MIN : rounded)
+  const min = kind === 'depth' ? DEPTH_MIN : SIZE_MIN
+  return toField(rounded < min ? min : rounded)
 }
 
 /** Нормализует все четыре поля разом — для проверки перед генерацией (ТЗ 5.3). */

@@ -29,6 +29,15 @@ test('normalize: округление всегда в большую сторо�
   assert.equal(normalize('3,01', 'count'), '4')
 })
 
+test('normalize: у глубины свой минимум — 12 мм', () => {
+  assert.equal(normalize('5', 'depth'), '12')
+  assert.equal(normalize('0', 'depth'), '12')
+  assert.equal(normalize('11,99', 'depth'), '12')
+  assert.equal(normalize('12', 'depth'), '12')
+  assert.equal(normalize('37', 'depth'), '37')
+  assert.equal(normalizeFields({ width: '5', depth: '5', nx: '0', ny: '0' }).depth, '12')
+})
+
 test('normalize: что не меняется', () => {
   assert.equal(normalize('19,6', 'size'), '19,6')
   assert.equal(normalize('37', 'size'), '37')
@@ -55,12 +64,12 @@ test('normalize: отрицательное поднимается до нижн
 
 test('fieldKind и normalizeFields', () => {
   assert.equal(fieldKind('width'), 'size')
-  assert.equal(fieldKind('depth'), 'size')
+  assert.equal(fieldKind('depth'), 'depth')
   assert.equal(fieldKind('nx'), 'count')
   assert.equal(fieldKind('ny'), 'count')
   assert.deepEqual(
     normalizeFields({ width: '20.5', depth: '5', nx: '0', ny: '3,4' }),
-    { width: '20,5', depth: '10', nx: '1', ny: '4' },
+    { width: '20,5', depth: '12', nx: '1', ny: '4' },
   )
 })
 
