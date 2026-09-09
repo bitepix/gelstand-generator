@@ -19,7 +19,14 @@ test('normalize: таблица 5.1', () => {
   assert.equal(normalize('5', 'size'), '10')
   assert.equal(normalize('0', 'size'), '10')
   assert.equal(normalize('0', 'count'), '1')
-  assert.equal(normalize('2,7', 'count'), '1')
+  assert.equal(normalize('2,7', 'count'), '3')
+})
+
+test('normalize: округление всегда в большую сторону', () => {
+  assert.equal(normalize('20,571', 'size'), '20,58')
+  assert.equal(normalize('100,004', 'size'), '100,01')
+  assert.equal(normalize('0,4', 'count'), '1')
+  assert.equal(normalize('3,01', 'count'), '4')
 })
 
 test('normalize: что не меняется', () => {
@@ -31,7 +38,6 @@ test('normalize: что не меняется', () => {
 
 test('normalize: превышение 100 мм не правится — это ERR-02', () => {
   assert.equal(normalize('120', 'size'), '120')
-  assert.equal(normalize('100,004', 'size'), '100')
   assert.equal(normalize('100,006', 'size'), '100,01')
 })
 
@@ -54,7 +60,7 @@ test('fieldKind и normalizeFields', () => {
   assert.equal(fieldKind('ny'), 'count')
   assert.deepEqual(
     normalizeFields({ width: '20.5', depth: '5', nx: '0', ny: '3,4' }),
-    { width: '20,5', depth: '10', nx: '1', ny: '1' },
+    { width: '20,5', depth: '10', nx: '1', ny: '4' },
   )
 })
 

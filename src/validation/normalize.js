@@ -39,15 +39,16 @@ export function normalize(raw, kind) {
   if (Number.isNaN(n)) return ''
 
   if (kind === 'count') {
-    // Ноль и дробное дают 1 (ТЗ 5.1, последняя строка таблицы).
-    if (!Number.isInteger(n) || n < COUNT_MIN) return String(COUNT_MIN)
-    return String(n)
+    // Дробное округляется вверх, ноль и отрицательное поднимаются до 1 (ТЗ 5.1).
+    return String(Math.max(Math.ceil(n), COUNT_MIN))
   }
 
-  // Размер: округление до двух знаков, подъём до нижней границы.
-  // Верхняя граница не правится — это ERR-02.
+  // Размер: округление до двух знаков в большую сторону, подъём до нижней
+  // границы. Верхняя граница не правится — это ERR-02.
   const factor = 10 ** SIZE_DECIMALS
-  const rounded = Math.round(n * factor) / factor
+  // toFixed гасит двоичный хвост: без него 19,6 × 100 = 1960.0000000000002
+  // и ceil дал бы 19,61.
+  const rounded = Math.ceil(Number((n * factor).toFixed(6))) / factor
   return toField(rounded < SIZE_MIN ? SIZE_MIN : rounded)
 }
 
