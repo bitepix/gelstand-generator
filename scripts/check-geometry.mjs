@@ -7,7 +7,7 @@
 
 import assert from 'node:assert/strict'
 
-import { BASE, CHAMFER_FOOT, CHAMFER_TOP, HEIGHT, PITCH_EXTRA } from '../src/constants.js'
+import { BASE, HEIGHT, PITCH_EXTRA } from '../src/constants.js'
 
 let build
 try {
@@ -74,19 +74,13 @@ for (let axis = 0; axis < 3; axis += 1) {
 
 checkClosed(mesh.indices)
 
-// Уровни Z. Приёмка B2 — эталон из ТЗ 22: 0 / 1,2 / 1,7 / 14,5 / 15,0.
-// Это уровни плоских граней; на наклонных гранях фасок вершины могут стоять
-// на любой высоте между ними, поэтому проверяется наличие, а не совпадение.
+// Уровни Z. Приёмка B2: без фасок горизонтальные грани только на трёх уровнях
+// — низ, верх основания и верх стоек (ТЗ 22, примечание про альфу).
 const levels = new Set()
 for (let v = 2; v < mesh.positions.length; v += 3) {
   levels.add(Math.round(mesh.positions[v] * 1000) / 1000)
 }
-const REFERENCE = [0, BASE, BASE + CHAMFER_FOOT, HEIGHT - CHAMFER_TOP, HEIGHT]
-for (const z of REFERENCE) {
-  assert.ok(levels.has(z), `нет уровня Z = ${z}, есть ${[...levels].sort((a, b) => a - b)}`)
-}
-assert.equal(Math.min(...levels), 0)
-assert.equal(Math.max(...levels), HEIGHT)
+assert.deepEqual([...levels].sort((a, b) => a - b), [0, BASE, HEIGHT])
 
 // Одна плитка — тот же путь, сетка 1 × 1.
 const tile = await build({ ...CASE, nx: 1, ny: 1 })
@@ -100,5 +94,5 @@ checkClosed(tile.indices)
 console.log(`Сетка 3 × 3 (19,6 × 37,0): ${mesh.bbox.x} × ${mesh.bbox.y} × ${mesh.bbox.z} мм`)
 console.log(`Треугольников ${triangles}, вершин ${vertices}, построение ${elapsed.toFixed(1)} мс`)
 console.log(`Одна плитка: ${tile.bbox.x} × ${tile.bbox.y} × ${tile.bbox.z} мм`)
-console.log(`Эталонные уровни Z на месте: ${REFERENCE.join(' / ')}`)
+console.log(`Уровни Z: ${[...levels].sort((a, b) => a - b).join(' / ')}`)
 console.log('Замкнутый манифолд, положительный октант — критерий 21 пройден.')
