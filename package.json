@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node --test tests/*.test.mjs",
-    "check:state": "node scripts/check-state.mjs"
+    "check:state": "node scripts/check-state.mjs",
+    "check:export": "node scripts/check-export.mjs"
   },
   "dependencies": {
     "react": "^19.0.0",
