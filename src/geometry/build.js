@@ -4,12 +4,13 @@
 // Объединение профилей делается на плоских контурах, до выдавливания —
 // трёхмерных булевых операций, кроме одной сборки двух тел, нет.
 //
-// Скруглений и фасок здесь нет: это задача B2. Сначала габариты и топология.
+// Скругления вертикальных рёбер — в round.js, на объединённых контурах.
 
 import Module from 'manifold-3d'
 
 import { BASE, HEIGHT } from '../constants.js'
 import { profiles } from './profile.js'
+import { roundCorners } from './round.js'
 
 /** WASM инициализируется один раз на всё приложение. */
 let ready = null
@@ -22,6 +23,15 @@ function manifold() {
     })
   }
   return ready
+}
+
+/**
+ * Контуры сечения со скруглёнными углами. toPolygons отдаёт точки объектами
+ * {x, y}, round.js работает с парами [x, y] — здесь единственное место, где
+ * форматы встречаются.
+ */
+function rounded(section) {
+  return roundCorners(section.toPolygons().map((c) => c.map((p) => [p.x, p.y])))
 }
 
 /** Меш приходит во float32: 22,6 в нём хранится как 22,600000381. */
@@ -56,8 +66,13 @@ export async function build(params) {
   // Fill rule Positive: контуры против часовой складываются, по часовой
   // вычитаются, наложения уголков соседних плиток схлопываются в объединение.
   // Поэтому попарных булевых операций на прямоугольниках не требуется.
-  const baseProfile = new CrossSection(base, 'Positive')
-  const postProfile = new CrossSection(posts, 'Positive')
+  const baseRaw = new CrossSection(base, 'Positive')
+  const postRaw = new CrossSection(posts, 'Positive')
+
+  // Скругления вертикальных рёбер делаются после объединения контуров:
+  // до него углов креста ещё не существует, они появляются на стыке плиток.
+  const baseProfile = new CrossSection(rounded(baseRaw), 'Positive')
+  const postProfile = new CrossSection(rounded(postRaw), 'Positive')
 
   const slab = Manifold.extrude(baseProfile, BASE)
   const walls = Manifold.extrude(postProfile, HEIGHT)
@@ -76,7 +91,7 @@ export async function build(params) {
     },
   }
 
-  for (const object of [baseProfile, postProfile, slab, walls, model]) object.delete()
+  for (const object of [baseRaw, postRaw, baseProfile, postProfile, slab, walls, model]) object.delete()
 
   return result
 }
