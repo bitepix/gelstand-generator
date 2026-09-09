@@ -6,6 +6,12 @@
 // нижняя грань на Z = 0, габарит 67,8 × 120,0 × 15,0.
 
 import assert from 'node:assert/strict'
+import { mkdirSync, writeFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+
+import { export3MF } from '../src/export/threemf.js'
+import { exportSTL } from '../src/export/stl.js'
+import { fileName } from '../src/export/fileName.js'
 
 import { BASE, HEIGHT, PITCH_EXTRA } from '../src/constants.js'
 
@@ -96,3 +102,13 @@ console.log(`Треугольников ${triangles}, вершин ${vertices}, 
 console.log(`Одна плитка: ${tile.bbox.x} × ${tile.bbox.y} × ${tile.bbox.z} мм`)
 console.log(`Уровни Z: ${[...levels].sort((a, b) => a - b).join(' / ')}`)
 console.log('Замкнутый манифолд, положительный октант — критерий 21 пройден.')
+
+// Модель кладётся на диск: часть приёмки видна только в слайсере.
+const out = resolve(import.meta.dirname, '..', 'tmp')
+mkdirSync(out, { recursive: true })
+const params = { width: '19,6', depth: '37', nx: '3', ny: '3' }
+for (const [ext, blob] of [['3mf', export3MF(mesh)], ['stl', exportSTL(mesh)]]) {
+  const path = resolve(out, fileName(params, ext))
+  writeFileSync(path, Buffer.from(await blob.arrayBuffer()))
+  console.log(path)
+}
