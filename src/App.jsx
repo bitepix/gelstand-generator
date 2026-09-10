@@ -1,19 +1,23 @@
 import { useReducer } from 'react'
+
 import { reducer } from './state/reducer.js'
 import { makeInitialState } from './state/initial.js'
-import { snapshot } from './state/snapshot.js'
+import { Panel } from './screens/Panel.jsx'
+import styles from './App.module.css'
 
-// Каркас. Интерфейса пока нет — экран показывает дерево состояния,
-// чтобы было видно, что редьюсер живой. Компоненты приходят в блоке C.
+// Третий шаг пока рисуется той же панелью: превью приходит в D2, логика
+// кнопок и генерация — в D3.
 export default function App() {
-  const [state] = useReducer(reducer, undefined, makeInitialState)
+  const [state, dispatch] = useReducer(reducer, undefined, makeInitialState)
 
   return (
-    <main style={{ font: '14px/1.5 system-ui, sans-serif', padding: 24 }}>
-      <h1 style={{ fontSize: 18 }}>Nail Modernism Gelstand</h1>
-      <p>Каркас. Шаг {state.step} из 3.</p>
-      <pre>{JSON.stringify(state, null, 2)}</pre>
-      <p>snapshot: {snapshot(state)}</p>
+    <main className={styles.app}>
+      <header className={styles.header}>
+        <h1 className={styles.title}>Nail Modernism Gelstand</h1>
+        <p className={styles.subtitle}>Генератор подставок под баночки</p>
+      </header>
+
+      <Panel state={state} dispatch={dispatch} />
     </main>
   )
 }

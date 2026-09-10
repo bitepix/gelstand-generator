@@ -1,0 +1,25 @@
+.app {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: var(--gap-lg) var(--gap);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-lg);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-xs);
+}
+
+.title {
+  margin: 0;
+  font-size: 20px;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-muted);
+}
