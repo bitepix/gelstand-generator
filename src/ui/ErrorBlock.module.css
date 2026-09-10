@@ -1,0 +1,20 @@
+.block {
+  padding: 12px 14px;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+}
+
+.list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-xs);
+}
+
+.text {
+  margin: 0;
+  font-size: 14px;
+  color: var(--danger);
+}

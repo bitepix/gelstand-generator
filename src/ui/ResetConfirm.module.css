@@ -1,0 +1,57 @@
+.dialog {
+  width: min(420px, calc(100vw - 32px));
+  padding: var(--gap-lg);
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.dialog::backdrop {
+  background: rgba(22, 22, 26, 0.4);
+}
+
+.title {
+  margin: 0 0 var(--gap-sm);
+  font-size: 18px;
+}
+
+.text {
+  margin: 0 0 var(--gap-lg);
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--gap-sm);
+}
+
+.cancel,
+.confirm {
+  height: var(--control-height);
+  padding: 0 18px;
+  font: inherit;
+  font-size: 15px;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.cancel {
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border);
+}
+
+.confirm {
+  color: var(--text-inverse);
+  background: var(--danger);
+  border: 1px solid var(--danger);
+}
+
+.cancel:focus-visible,
+.confirm:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
