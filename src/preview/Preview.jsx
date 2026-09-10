@@ -23,6 +23,7 @@ import {
   WebGLRenderer,
 } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { toCreasedNormals } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
 import { Loader } from '../ui/Loader.jsx'
 import styles from './Preview.module.css'
@@ -60,10 +61,17 @@ function createScene(canvas) {
 
   return {
     setModel({ positions, indices, bbox }) {
-      const geometry = new BufferGeometry()
-      geometry.setAttribute('position', new BufferAttribute(positions, 3))
-      geometry.setIndex(new BufferAttribute(indices, 1))
-      geometry.computeVertexNormals()
+      const raw = new BufferGeometry()
+      raw.setAttribute('position', new BufferAttribute(positions, 3))
+      raw.setIndex(new BufferAttribute(indices, 1))
+
+      // Нормали считаются с порогом по углу, а не усреднением по всем смежным
+      // граням. Обычный computeVertexNormals сглаживает и острые рёбра —
+      // верхушки стоек тогда выглядят скошенными, будто на них есть фаска,
+      // хотя в геометрии её нет. Порог 40° оставляет скругления гладкими.
+      const geometry = toCreasedNormals(raw, (40 * Math.PI) / 180)
+      raw.dispose()
+
       // Модель лежит в положительном октанте — ставим её центром в начало
       // координат, чтобы орбита вращалась вокруг детали, а не мимо неё.
       geometry.translate(-bbox.x / 2, -bbox.y / 2, -bbox.z / 2)
