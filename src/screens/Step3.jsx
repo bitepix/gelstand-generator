@@ -27,6 +27,12 @@ const LABEL = {
 /** Число в подпись: один знак после запятой, разделитель — запятая (ТЗ 5). */
 const mm = (value) => value.toFixed(1).replace('.', ',')
 
+function describe(model, snap) {
+  const [, , , nx, ny] = snap.split('|')
+  const { x, y, z } = model.bbox
+  return `${mm(x)} × ${mm(y)} × ${mm(z)} мм · ${nx} × ${ny} ячейки`
+}
+
 function download(state) {
   const blob = export3MF(state.model)
   const url = URL.createObjectURL(blob)
@@ -51,10 +57,9 @@ export function Step3({ state, dispatch }) {
     if (validate(state).errors.length === 0) dispatch(generateStart())
   }
 
-  const caption = state.model
-    ? `${mm(state.model.bbox.x)} × ${mm(state.model.bbox.y)} × ${mm(state.model.bbox.z)} мм · ` +
-      `${state.fields.nx} × ${state.fields.ny} ячейки`
-    : null
+  // Подпись описывает показанную модель, а не то, что сейчас в полях: после
+  // правки параметров в превью остаётся старая модель (ТЗ 9.2, 11.4).
+  const caption = state.model ? describe(state.model, state.modelSnapshot) : null
 
   return (
     <div className={styles.step}>
