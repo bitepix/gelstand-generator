@@ -1,0 +1,41 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-xs);
+}
+
+.label {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.input {
+  height: var(--control-height);
+  padding: 0 12px;
+  font: inherit;
+  font-size: 16px; /* меньше 16px — Safari на iOS зумит страницу при фокусе */
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  outline: none;
+}
+
+.input:focus-visible {
+  border-color: var(--border-strong);
+  box-shadow: var(--focus-ring);
+}
+
+.input[data-error] {
+  border-color: var(--danger);
+}
+
+.input[data-error]:focus-visible {
+  box-shadow: 0 0 0 3px rgba(179, 38, 30, 0.18);
+}
+
+.input:disabled {
+  color: var(--text-muted);
+  background: var(--bg-sunken);
+  cursor: not-allowed;
+}
