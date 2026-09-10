@@ -1,0 +1,57 @@
+.group {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--bg-sunken);
+  border-radius: var(--radius-lg);
+}
+
+.option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-sm);
+  height: 36px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.option[data-selected] {
+  color: var(--text);
+  background: var(--bg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.option:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.option:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Пункт Soon: приглушён, курсор обычный, никакой реакции на наведение. */
+.option[data-soon] {
+  color: var(--text-muted);
+  opacity: 0.55;
+  cursor: default;
+  user-select: none;
+}
+
+.badge {
+  padding: 2px 6px;
+  font-size: 11px;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-inverse);
+  background: var(--text-muted);
+  border-radius: 999px;
+}
