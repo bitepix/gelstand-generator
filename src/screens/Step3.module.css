@@ -1,0 +1,14 @@
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-lg);
+}
+
+.actions {
+  display: flex;
+  gap: var(--gap-sm);
+}
+
+.actions > *:first-child {
+  flex: 1;
+}
