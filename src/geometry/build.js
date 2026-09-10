@@ -15,9 +15,23 @@ import { roundCorners } from './round.js'
 /** WASM инициализируется один раз на всё приложение. */
 let ready = null
 
+/**
+ * Адрес manifold.wasm. В браузере его даёт сборщик: сам manifold ищет файл
+ * рядом со своим модулем, а внутри воркера это не тот адрес — dev-сервер
+ * отвечал на такой запрос страницей, и WebAssembly падал на «expected magic
+ * word». В node путь не нужен, поэтому значение приходит снаружи, а не
+ * импортом: `?url` понимает только Vite, и проверочные скрипты на нём бы
+ * сломались.
+ */
+let wasmUrl = null
+
+export function setWasmUrl(url) {
+  wasmUrl = url
+}
+
 function manifold() {
   if (ready === null) {
-    ready = Module().then((wasm) => {
+    ready = Module(wasmUrl ? { locateFile: () => wasmUrl } : {}).then((wasm) => {
       wasm.setup()
       return wasm
     })

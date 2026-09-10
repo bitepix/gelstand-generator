@@ -3,7 +3,11 @@
 // Худший случай — 38 × 33 ячейки при минимальном размере — считается 4,5 с.
 // В основном потоке это заморозило бы интерфейс: ни лоадера, ни сброса.
 
-import { build } from '../geometry/build.js'
+import wasmUrl from 'manifold-3d/manifold.wasm?url'
+
+import { build, setWasmUrl } from '../geometry/build.js'
+
+setWasmUrl(wasmUrl)
 
 self.onmessage = async ({ data }) => {
   try {

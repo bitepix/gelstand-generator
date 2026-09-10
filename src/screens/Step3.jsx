@@ -24,8 +24,8 @@ const LABEL = {
   retry: 'Повторить',
 }
 
-/** Число в подпись: разделитель — запятая, как и в полях (ТЗ 5). */
-const mm = (value) => String(Math.round(value * 10) / 10).replace('.', ',')
+/** Число в подпись: один знак после запятой, разделитель — запятая (ТЗ 5). */
+const mm = (value) => value.toFixed(1).replace('.', ',')
 
 function download(state) {
   const blob = export3MF(state.model)
@@ -53,7 +53,7 @@ export function Step3({ state, dispatch }) {
 
   const caption = state.model
     ? `${mm(state.model.bbox.x)} × ${mm(state.model.bbox.y)} × ${mm(state.model.bbox.z)} мм · ` +
-      `${state.fields.nx} × ${state.fields.ny} ячеек`
+      `${state.fields.nx} × ${state.fields.ny} ячейки`
     : null
 
   return (
