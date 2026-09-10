@@ -113,7 +113,7 @@ test('validate: ERR-03 и ERR-04 — пустое количество', () => {
 })
 
 test('validate: ERR-05 — превышение габарита по X', () => {
-  // 5 × (100 + 3) = 515 > 500
+  // 5 × (100 + 3) = 515 > 320
   const r = validate(withFields({ width: '100', nx: '5' }))
   assert.deepEqual(r.errors, ['ERR-05'])
   assert.equal(r.fields.width, true)
@@ -138,11 +138,16 @@ test('validate: ERR-07 — превышение по обеим осям сра�
   assert.deepEqual(messagesFor(r.errors), [messages['ERR-05'], messages['ERR-06']])
 })
 
-test('validate: граница габарита ровно 500 мм проходит', () => {
-  // 5 × (97 + 3) = 500
-  assert.deepEqual(validate(withFields({ width: '97', nx: '5' })).errors, [])
-  // 5 × (97,01 + 3) = 500,05
-  assert.deepEqual(validate(withFields({ width: '97,01', nx: '5' })).errors, ['ERR-05'])
+test('validate: граница габарита ровно 320 мм проходит', () => {
+  // 4 × (77 + 3) = 320 — ровно стол H2D по короткой стороне
+  assert.deepEqual(validate(withFields({ width: '77', nx: '4' })).errors, [])
+  // 4 × (77,01 + 3) = 320,04
+  assert.deepEqual(validate(withFields({ width: '77,01', nx: '4' })).errors, ['ERR-05'])
+})
+
+test('validate: реальная подставка на стол 256 проходит', () => {
+  // 11 × 22,6 = 248,6 по X и 6 × 40 = 240 по Y
+  assert.deepEqual(validate(withFields({ nx: '11', ny: '6' })).errors, [])
 })
 
 test('validate: габарит не проверяется поверх пустого поля', () => {
