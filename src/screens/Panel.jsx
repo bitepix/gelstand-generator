@@ -19,6 +19,7 @@ import { PrimaryButton } from '../ui/Buttons.jsx'
 import { ErrorBlock } from '../ui/ErrorBlock.jsx'
 import { validate } from '../validation/validate.js'
 import { PRINTERS, printerLabel } from '../printers.js'
+import { planFor } from '../grid/fit.js'
 import { setField, normalizeField, next, setPrinter, toggleNoPrinter } from '../state/reducer.js'
 import styles from './Panel.module.css'
 
@@ -51,6 +52,8 @@ export function Panel({ state, dispatch, locked = false, actions }) {
   const visible = showErrors ? errors : []
 
   const step = state.step
+  // Плашка о делении — не ошибка: переход она не блокирует (ТЗ 16).
+  const plan = step >= 2 ? planFor(state) : null
   const rows = step === 1 ? [...SIZES, ...JARS] : step === 2 ? COUNTS : [...SIZES, ...JARS, ...COUNTS]
 
   const change = (field, value) => dispatch(setField(field, value))
@@ -118,6 +121,13 @@ export function Panel({ state, dispatch, locked = false, actions }) {
           />
         ))}
       </div>
+
+      {plan !== null && plan.parts > 1 && (
+        <Notice>
+          Баночек больше, чем помещается на стол. Нужно {plan.parts} подставок
+          по {plan.nx * plan.ny} ячеек — скачайте файл и напечатайте его {plan.parts} раз.
+        </Notice>
+      )}
 
       <ErrorBlock id={ERRORS_ID} codes={visible} />
 

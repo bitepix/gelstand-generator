@@ -6,6 +6,7 @@
 // нормализованную строку.
 
 import { toNumber } from '../validation/normalize.js'
+import { planFor } from '../grid/fit.js'
 import { makeInitialState } from './initial.js'
 import { snapshot } from './snapshot.js'
 
@@ -31,6 +32,20 @@ function syncJars(state, field) {
   return setFieldValue(state, 'jars', String(nx * ny))
 }
 
+/**
+ * Обратный ход: количество баночек и стол задают сетку (ТЗ 6.3). Подбор —
+ * подсказка, а не запрет: Nx и Ny остаются доступными для правки, и правка
+ * снова делает ведущим их.
+ */
+function applyPlan(state) {
+  const plan = planFor(state)
+  if (plan === null) return state
+  return {
+    ...state,
+    fields: { ...state.fields, nx: String(plan.nx), ny: String(plan.ny) },
+  }
+}
+
 export function reducer(state, action) {
   switch (action.type) {
     // Ввод в поле: строка кладётся как есть, без нормализации.
@@ -38,15 +53,18 @@ export function reducer(state, action) {
       return setFieldValue(state, action.field, action.value)
 
     // Завершение ввода: строка кладётся уже нормализованной (ТЗ 5.1).
-    case 'normalizeField':
-      return syncJars(setFieldValue(state, action.field, action.value), action.field)
+    case 'normalizeField': {
+      const next = setFieldValue(state, action.field, action.value)
+      if (action.field === 'nx' || action.field === 'ny') return syncJars(next, action.field)
+      return applyPlan(next)
+    }
 
     // Выбор принтера и галочка «нет принтера» исключают друг друга (ТЗ 6.2).
     case 'setPrinter':
-      return { ...state, printer: action.id, noPrinter: false }
+      return applyPlan({ ...state, printer: action.id, noPrinter: false })
 
     case 'toggleNoPrinter':
-      return { ...state, noPrinter: !state.noPrinter, printer: null }
+      return applyPlan({ ...state, noPrinter: !state.noPrinter, printer: null })
 
     // Переход вперёд. Возврата назад нет (ТЗ 2).
     // Шаг 2 → 3 сразу открывает третий шаг в состоянии генерации (ТЗ 8).
