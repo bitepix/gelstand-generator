@@ -5,3 +5,4 @@ tmp
 prototype/*.log
 
 prototype/out/
+_to_delete/
