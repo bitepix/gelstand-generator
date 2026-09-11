@@ -7,7 +7,7 @@
 // Модуль намеренно не зависит от manifold-3d: контуры считаются и
 // проверяются без WASM, склейка и выдавливание — в build.js.
 
-import { WALL, ARM_X, ARM_Y, PITCH_EXTRA } from '../constants.js'
+import { WALL, ARM_X, ARM_Y, LEDGE, PITCH_EXTRA } from '../constants.js'
 
 /** Прямоугольник как контур против часовой стрелки — материал. */
 const rect = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]]
@@ -73,14 +73,21 @@ export function profiles({ width, depth, nx, ny }) {
       const x = i * W
       const y = j * D
 
-      const x0 = x + ARM_X
-      const x1 = x + W - ARM_X
-      const y0 = y + ARM_Y
-      const y1 = y + D - ARM_Y
+      // Проём в основании — не прямоугольник, а крест: это открытая зона
+      // ячейки, ужатая на LEDGE со всех сторон (reference/README.md). Открытая
+      // зона сама крестообразна — между уголками стоек, — и баночка садится на
+      // полку шириной LEDGE. Два прямоугольника перекрываются; вычитание их по
+      // очереди равносильно вычитанию объединения.
       // Проёма нет, если плечи стоек сходятся. До интерфейса такая ячейка не
       // доходит — глубину поднимает DEPTH_MIN, — но прямой вызов build даёт
       // сплошное основание, а не вывернутый наизнанку контур.
-      if (x1 > x0 && y1 > y0) base.push(hole(x0, y0, x1, y1))
+      for (const [ax, ay] of [[WALL, ARM_Y], [ARM_X, WALL]]) {
+        const x0 = x + ax + LEDGE
+        const x1 = x + W - ax - LEDGE
+        const y0 = y + ay + LEDGE
+        const y1 = y + D - ay - LEDGE
+        if (x1 > x0 && y1 > y0) base.push(hole(x0, y0, x1, y1))
+      }
 
       for (const [cx, dx] of [[x, 1], [x + W, -1]]) {
         for (const [cy, dy] of [[y, 1], [y + D, -1]]) {
