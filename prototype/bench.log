@@ -1,3 +1,0 @@
-инициализация ядра: 99 мс
-
-эталон 3 × 3: ошибка — Called unwrap() on an Err: [KERNEL_OPERATION] CHAMFER_FAILED: Chamfer operation failed: chamferWithHistory: operation failed
