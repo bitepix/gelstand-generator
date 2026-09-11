@@ -80,7 +80,7 @@ function contoursOf(shape) {
 }
 
 /** Перекрывающиеся прямоугольники профиля → корректные контуры. */
-function clean(rects) {
+export function clean(rects) {
   const solid = rects.filter((c) => area(c) > 0)
   const holes = rects.filter((c) => area(c) < 0)
   let acc = blueprintOf(solid[0])
@@ -107,7 +107,7 @@ const onLine = (v, hi) => Math.abs(v) < 1e-6 || Math.abs(v - hi) < 1e-6
 const onBorder = (p, size) => onLine(p[0], size.x) || onLine(p[1], size.y)
 
 /** Контур, раздвинутый на d наружу от материала; рёбра на границе стоят. */
-function widen(contour, d, size) {
+export function widen(contour, d, size) {
   const n = contour.length
   const lines = contour.map((p, i) => {
     const q = contour[(i + 1) % n]
@@ -145,11 +145,22 @@ function round2D(drawing, size, convex, concave) {
   return out
 }
 
-/** Рёбра, целиком лежащие на заданной высоте. */
-const atLevel = (z) =>
+/** Ребро лежит на габаритном прямоугольнике сетки. */
+function onGridEdge(edge, size) {
+  const b = getBounds(edge)
+  return (Math.abs(b.xMax - b.xMin) < 1e-6 && onLine(b.xMin, size.x))
+    || (Math.abs(b.yMax - b.yMin) < 1e-6 && onLine(b.yMin, size.y))
+}
+
+/**
+ * Рёбра на заданной высоте, кроме тех, что на границе: внешние грани детали
+ * плоские, фаска на них не заходит.
+ */
+const atLevel = (z, size) =>
   edgeFinder().when((edge) => {
     const b = getBounds(edge)
-    return Math.abs(b.zMin - z) < 1e-6 && Math.abs(b.zMax - z) < 1e-6
+    if (Math.abs(b.zMin - z) > 1e-6 || Math.abs(b.zMax - z) > 1e-6) return false
+    return !onGridEdge(edge, size)
   })
 
 /** Меш приходит во float32: 22,6 в нём хранится как 22,600000381. */
@@ -180,18 +191,21 @@ export function solidOf(params) {
     Math.max(FILLET_CONCAVE - CHAMFER_FOOT, 0),
   )
 
-  const skirt = unwrap(chamfer(
+  const ok = (label, r) => {
+    if (!r.ok) throw new Error(`${label}: ${JSON.stringify(r.error).slice(0, 100)}`)
+    return r.value
+  }
+
+  const skirt = ok('юбка подошвы', chamfer(
     wideD.sketchOnPlane('XY').extrude(BASE + CHAMFER_FOOT),
-    atLevel(BASE + CHAMFER_FOOT),
+    atLevel(BASE + CHAMFER_FOOT, size),
     CHAMFER_FOOT,
   ))
   const slab = baseD.clone().sketchOnPlane('XY').extrude(BASE)
   const post = postD.clone().sketchOnPlane('XY').extrude(HEIGHT)
 
-  // simplify склеивает соосные грани: без него стенка стойки разрезана
-  // пополам на уровне 1,7, там где к ней пристаёт юбка.
-  const body = unwrap(fuse(unwrap(fuse(slab, post, { simplify: true })), skirt, { simplify: true }))
-  return unwrap(chamfer(body, atLevel(HEIGHT), CHAMFER_TOP))
+  const body = ok('приварка юбки', fuse(ok('сборка тела', fuse(slab, post)), skirt))
+  return ok('верхняя фаска', chamfer(body, atLevel(HEIGHT, size), CHAMFER_TOP))
 }
 
 function meshOf(body) {

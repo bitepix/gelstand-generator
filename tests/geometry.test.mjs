@@ -6,7 +6,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 import { profiles, tileSize } from '../src/geometry/profile.js'
-import { WALL, ARM_X, ARM_Y, HEIGHT } from '../src/constants.js'
+import { WALL, ARM_X, ARM_Y, LEDGE, HEIGHT } from '../src/constants.js'
 
 /** Площадь контура со знаком: против часовой — плюс, по часовой — минус. */
 const area = (contour) => {
@@ -47,58 +47,68 @@ test('габарит сетки — критерий 21 ТЗ: 67,8 × 120,0 × 1
   assert.equal(HEIGHT, 15)
 })
 
-test('основание: один общий прямоугольник и по проёму на ячейку', () => {
+test('основание: общий прямоугольник и по два прямоугольника проёма на ячейку', () => {
   const { base } = profiles({ width: 19.6, depth: 37, nx: 3, ny: 3 })
-  assert.equal(base.length, 1 + 9)
+  assert.equal(base.length, 1 + 2 * 9)
 
   // Внешний контур против часовой, проёмы — по часовой.
   assert.ok(area(base[0]) > 0)
   for (const contour of base.slice(1)) assert.ok(area(contour) < 0)
 
-  // Проём первой плитки и последней: от плеча до плеча.
-  assert.ok(has(base, [ARM_X, ARM_Y, 22.6 - ARM_X, 40 - ARM_Y]))
-  assert.ok(has(base, [2 * 22.6 + ARM_X, 2 * 40 + ARM_Y, 3 * 22.6 - ARM_X, 3 * 40 - ARM_Y]))
+  // Проём — крест: открытая зона ячейки, ужатая на LEDGE (reference/README.md).
+  // Для 19,6 × 37 это 3,25…19,35 × 8,75…31,25 и 6,75…15,85 × 3,25…36,75.
+  assert.ok(has(base, [3.25, 8.75, 19.35, 31.25]))
+  assert.ok(has(base, [6.75, 3.25, 15.85, 36.75]))
+
+  // Последняя ячейка — тот же крест, сдвинутый на два шага.
+  assert.ok(has(base, [2 * 22.6 + 3.25, 2 * 40 + 8.75, 3 * 22.6 - 3.25, 3 * 40 - 8.75]))
 })
 
-test('полка под баночку: 3,5 вдоль X и 5,5 вдоль Y', () => {
-  close(ARM_X - WALL, 3.5)
-  close(ARM_Y - WALL, 5.5)
+test('полка под баночку — LEDGE 1,75 со всех сторон', () => {
+  const { base } = profiles({ width: 19.6, depth: 37, nx: 1, ny: 1 })
+  const wide = base.slice(1).find((c) => bounds(c)[2] - bounds(c)[0] > 16)
+  close(bounds(wide)[0], WALL + LEDGE)
+  close(bounds(wide)[1], ARM_Y + LEDGE)
 })
 
-test('стойки: по два прямоугольника на каждый из четырёх углов плитки', () => {
+test('стойки: по две планки на каждый узел сетки', () => {
   const { posts } = profiles({ width: 19.6, depth: 37, nx: 3, ny: 3 })
-  assert.equal(posts.length, 8 * 9)
+  assert.equal(posts.length, 2 * 4 * 4)
   for (const contour of posts) assert.ok(area(contour) > 0)
 
-  // Уголок в начале координат: ARM_X × WALL и WALL × ARM_Y.
+  // Узел в начале координат — угловой: плечи только внутрь.
   assert.ok(has(posts, [0, 0, ARM_X, WALL]))
   assert.ok(has(posts, [0, 0, WALL, ARM_Y]))
 
-  // Дальний угол сетки — зеркально, внутрь габарита.
+  // Дальний угол сетки — зеркально.
   const [X, Y] = [3 * 22.6, 3 * 40]
   assert.ok(has(posts, [X - ARM_X, Y - WALL, X, Y]))
   assert.ok(has(posts, [X - WALL, Y - ARM_Y, X, Y]))
 })
 
-test('уголки соседних плиток стыкуются в узле сетки', () => {
-  const { posts } = profiles({ width: 19.6, depth: 37, nx: 2, ny: 1 })
-  // Плечи слева и справа от узла x = 22,6 лежат встык, шириной 2 × ARM_X.
-  assert.ok(has(posts, [22.6 - ARM_X, 0, 22.6, WALL]))
-  assert.ok(has(posts, [22.6, 0, 22.6 + ARM_X, WALL]))
+test('узел внутри сетки — крест, а не два касающихся уголка', () => {
+  // Планки строятся целиком и перекрываются: касающиеся рёбрами прямоугольники
+  // 2D-объединение в ядре теряет, и стенка на стыке пропадала.
+  const { posts } = profiles({ width: 19.6, depth: 37, nx: 2, ny: 2 })
+  assert.ok(has(posts, [22.6 - ARM_X, 40 - WALL, 22.6 + ARM_X, 40 + WALL]))
+  assert.ok(has(posts, [22.6 - WALL, 40 - ARM_Y, 22.6 + WALL, 40 + ARM_Y]))
 })
 
 test('одна плитка — частный случай сетки 1 × 1', () => {
   const { base, posts, size } = profiles({ width: 19.6, depth: 37, nx: 1, ny: 1 })
-  assert.equal(base.length, 2)
+  assert.equal(base.length, 3)
   assert.equal(posts.length, 8)
   close(size.x, 22.6)
   close(size.y, 40)
 })
 
-test('малая ячейка: проёма нет, основание сплошное', () => {
-  // При depth = 10 плечи стоек сходятся: D − ARM_Y = 6 меньше ARM_Y = 7.
+test('малая ячейка: от проёма остаётся одна полоса', () => {
+  // При depth = 10 плечи стоек сходятся по Y: D − ARM_Y = 6 меньше ARM_Y = 7,
+  // и стенка идёт на всю глубину. Открыт только промежуток между торцами
+  // вдоль X, значит и проём остаётся один.
   const { base } = profiles({ width: 19.6, depth: 10, nx: 1, ny: 1 })
-  assert.equal(base.length, 1)
+  assert.equal(base.length, 2)
+  assert.ok(has(base, [ARM_X + LEDGE, WALL + LEDGE, 22.6 - ARM_X - LEDGE, 13 - WALL - LEDGE]))
 })
 
 test('негодные параметры отвергаются', () => {
