@@ -1,0 +1,17 @@
+.notice {
+  margin: 0;
+  padding: 12px 14px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text);
+  background: var(--bg-sunken);
+  border-radius: var(--radius);
+}
+
+.notice[data-kind='offer'] {
+  background: var(--offer-bg);
+}
+
+.notice a {
+  color: inherit;
+}

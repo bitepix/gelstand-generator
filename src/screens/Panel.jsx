@@ -11,11 +11,15 @@
 import { useState } from 'react'
 
 import { Field } from '../ui/Field.jsx'
+import { Select } from '../ui/Select.jsx'
+import { Checkbox } from '../ui/Checkbox.jsx'
+import { Notice } from '../ui/Notice.jsx'
 import { SegmentedControl } from '../ui/SegmentedControl.jsx'
 import { PrimaryButton } from '../ui/Buttons.jsx'
 import { ErrorBlock } from '../ui/ErrorBlock.jsx'
 import { validate } from '../validation/validate.js'
-import { setField, normalizeField, next } from '../state/reducer.js'
+import { PRINTERS, printerLabel } from '../printers.js'
+import { setField, normalizeField, next, setPrinter, toggleNoPrinter } from '../state/reducer.js'
 import styles from './Panel.module.css'
 
 const ERRORS_ID = 'params-errors'
@@ -31,6 +35,8 @@ const COUNTS = [
   { field: 'nx', label: 'Количество по X' },
   { field: 'ny', label: 'Количество по Y' },
 ]
+
+const PRINTER_OPTIONS = PRINTERS.map((p) => ({ value: p.id, label: printerLabel(p) }))
 
 /**
  * @param {object} props
@@ -68,6 +74,34 @@ export function Panel({ state, dispatch, locked = false, actions }) {
         disabled={locked}
         onChange={() => {}}
       />
+
+      {step >= 2 && (
+        <>
+          <Select
+            label="Принтер"
+            placeholder="Выберите модель"
+            value={state.printer}
+            options={PRINTER_OPTIONS}
+            disabled={locked || state.noPrinter}
+            onChange={(id) => dispatch(setPrinter(id))}
+          />
+          <Checkbox
+            label="У меня нет принтера"
+            checked={state.noPrinter}
+            disabled={locked}
+            onChange={() => dispatch(toggleNoPrinter())}
+          />
+          {state.noPrinter && (
+            <Notice kind="offer">
+              Купить 3D-принтер можно в магазине{' '}
+              <a href="https://3d-outlet.com/" target="_blank" rel="noreferrer">
+                3d-outlet.com
+              </a>
+              , промокод <b>NAILMOD5</b> даёт 5% скидки.
+            </Notice>
+          )}
+        </>
+      )}
 
       <div className={styles.grid}>
         {rows.map(({ field, label }) => (

@@ -16,6 +16,10 @@ import {
   BufferGeometry,
   Color,
   DirectionalLight,
+  Float32BufferAttribute,
+  Group,
+  LineBasicMaterial,
+  LineLoop,
   Mesh,
   MeshStandardMaterial,
   PerspectiveCamera,
@@ -51,6 +55,35 @@ function createScene(canvas) {
   const mesh = new Mesh(new BufferGeometry(), material)
   scene.add(mesh)
 
+  // Стол принтера под моделью. ТЗ 11 и блок H4: пространственное мышление —
+  // не у всех, а увидеть, сколько места подставка занимает на столе, надо.
+  const bedGroup = new Group()
+  scene.add(bedGroup)
+  const bedLine = new LineBasicMaterial({ color: 0x9a9aa4 })
+  const fieldLine = new LineBasicMaterial({ color: 0xc4c4cc })
+
+  /** Прямоугольник в плоскости XY, центром в начале координат. */
+  const rectangle = (x, y, lineMaterial) => {
+    const geometry = new BufferGeometry()
+    geometry.setAttribute('position', new Float32BufferAttribute(
+      [-x / 2, -y / 2, 0, x / 2, -y / 2, 0, x / 2, y / 2, 0, -x / 2, y / 2, 0], 3,
+    ))
+    return new LineLoop(geometry, lineMaterial)
+  }
+
+  let bed = null
+  let bottom = 0
+
+  function drawBed() {
+    for (const child of bedGroup.children) child.geometry.dispose()
+    bedGroup.clear()
+    if (bed === null) return
+    bedGroup.add(rectangle(bed.x, bed.y, bedLine))
+    // Отступ показан отдельной линией: видно, почему предел меньше стола.
+    if (bed.field) bedGroup.add(rectangle(bed.field.x, bed.field.y, fieldLine))
+    bedGroup.position.z = bottom
+  }
+
   let frame = 0
   const loop = () => {
     frame = requestAnimationFrame(loop)
@@ -79,9 +112,13 @@ function createScene(canvas) {
       mesh.geometry.dispose()
       mesh.geometry = geometry
 
-      // Дистанция по описанной сфере: деталь целиком попадает в кадр при
-      // любом соотношении сторон.
-      const radius = Math.hypot(bbox.x, bbox.y, bbox.z) / 2
+      bottom = -bbox.z / 2
+      drawBed()
+
+      // Дистанция по описанной сфере: и деталь, и стол целиком попадают в
+      // кадр при любом соотношении сторон.
+      const span = bed ? { x: Math.max(bbox.x, bed.x), y: Math.max(bbox.y, bed.y) } : bbox
+      const radius = Math.hypot(span.x, span.y, bbox.z) / 2
       const distance = radius / Math.sin((FOV / 2) * (Math.PI / 180))
       camera.near = Math.max(distance / 100, 0.1)
       camera.far = distance * 10
@@ -89,6 +126,11 @@ function createScene(canvas) {
       camera.up.set(0, 0, 1)
       controls.target.set(0, 0, 0)
       controls.update()
+    },
+
+    setBed(next) {
+      bed = next
+      drawBed()
     },
 
     resize(width, height) {
@@ -101,8 +143,11 @@ function createScene(canvas) {
     dispose() {
       cancelAnimationFrame(frame)
       controls.dispose()
+      for (const child of bedGroup.children) child.geometry.dispose()
       mesh.geometry.dispose()
       material.dispose()
+      bedLine.dispose()
+      fieldLine.dispose()
       renderer.dispose()
     },
   }
@@ -113,8 +158,9 @@ function createScene(canvas) {
  * @param {{ positions: Float32Array, indices: Uint32Array, bbox: object } | null} props.model
  * @param {'idle'|'pending'|'ready'|'error'} props.status
  * @param {string} [props.caption]  строка габарита и количества ячеек
+ * @param {{ x: number, y: number, field?: { x: number, y: number } } | null} [props.bed]
  */
-export function Preview({ model, status, caption }) {
+export function Preview({ model, status, caption, bed = null }) {
   const canvasRef = useRef(null)
   const sceneRef = useRef(null)
 
@@ -139,6 +185,10 @@ export function Preview({ model, status, caption }) {
   useEffect(() => {
     if (model && sceneRef.current) sceneRef.current.setModel(model)
   }, [model])
+
+  useEffect(() => {
+    if (sceneRef.current) sceneRef.current.setBed(bed)
+  }, [bed])
 
   const empty = model === null
 

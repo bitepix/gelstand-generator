@@ -41,6 +41,13 @@ export function reducer(state, action) {
     case 'normalizeField':
       return syncJars(setFieldValue(state, action.field, action.value), action.field)
 
+    // Выбор принтера и галочка «нет принтера» исключают друг друга (ТЗ 6.2).
+    case 'setPrinter':
+      return { ...state, printer: action.id, noPrinter: false }
+
+    case 'toggleNoPrinter':
+      return { ...state, noPrinter: !state.noPrinter, printer: null }
+
     // Переход вперёд. Возврата назад нет (ТЗ 2).
     // Шаг 2 → 3 сразу открывает третий шаг в состоянии генерации (ТЗ 8).
     case 'next':
@@ -79,6 +86,8 @@ export function reducer(state, action) {
 // Создатели действий — чтобы строки типов не разъезжались по компонентам.
 export const setField = (field, value) => ({ type: 'setField', field, value })
 export const normalizeField = (field, value) => ({ type: 'normalizeField', field, value })
+export const setPrinter = (id) => ({ type: 'setPrinter', id })
+export const toggleNoPrinter = () => ({ type: 'toggleNoPrinter' })
 export const next = () => ({ type: 'next' })
 export const generateStart = () => ({ type: 'generateStart' })
 export const generateOk = (model, snap) => ({ type: 'generateOk', model, snapshot: snap })

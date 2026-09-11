@@ -3,7 +3,8 @@
 // Чистая функция: один и тот же результат во всех трёх точках вызова —
 // по blur, по кнопке продолжения и перед каждым запуском генерации.
 
-import { SIZE_MAX, PITCH_EXTRA, OVERALL_MAX } from '../constants.js'
+import { SIZE_MAX, PITCH_EXTRA } from '../constants.js'
+import { printField } from '../printers.js'
 import { toNumber } from './normalize.js'
 
 const NO_ERRORS = { width: false, depth: false, jars: false, nx: false, ny: false }
@@ -59,18 +60,21 @@ export function validate(state) {
   }
 
   // ERR-05, ERR-06 — габарит. Формула раздела 7: считается по реальному
-  // внешнему размеру, шаг сетки = размер полости + 3,0.
+  // внешнему размеру, шаг сетки = размер полости + 3,0, а предел берётся из
+  // полезного поля выбранного принтера.
   // Ось проверяется только если обе её величины уже прошли предыдущие
   // проверки: иначе к пустому полю добавился бы шум про габарит.
   const axisX = !widthEmpty && !widthTooBig && !Number.isNaN(cx)
   const axisY = !depthEmpty && !depthTooBig && !Number.isNaN(cy)
 
-  if (axisX && cx * (w + PITCH_EXTRA) > OVERALL_MAX) {
+  const field = printField(state)
+
+  if (axisX && cx * (w + PITCH_EXTRA) > field.x) {
     errors.push('ERR-05')
     fields.width = true
     fields.nx = true
   }
-  if (axisY && cy * (d + PITCH_EXTRA) > OVERALL_MAX) {
+  if (axisY && cy * (d + PITCH_EXTRA) > field.y) {
     // Обе оси разом — это ERR-07 из таблицы 16: два сообщения в одном блоке.
     errors.push('ERR-06')
     fields.depth = true

@@ -1,0 +1,54 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-xs);
+}
+
+.label {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.wrap {
+  position: relative;
+  display: block;
+}
+
+/* Стрелка рисуется здесь, а не браузером: нативная у каждого своя. */
+.wrap::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  width: 8px;
+  height: 8px;
+  border: solid var(--text-muted);
+  border-width: 0 1.5px 1.5px 0;
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+
+.select {
+  width: 100%;
+  height: var(--control-height);
+  padding: 0 36px 0 12px;
+  font: inherit;
+  font-size: 16px; /* меньше 16px — Safari на iOS зумит страницу при фокусе */
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  outline: none;
+  appearance: none;
+}
+
+.select:focus-visible {
+  border-color: var(--border-strong);
+  box-shadow: var(--focus-ring);
+}
+
+.select:disabled {
+  color: var(--text-muted);
+  background: var(--bg-sunken);
+  cursor: not-allowed;
+}

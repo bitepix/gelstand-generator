@@ -1,0 +1,28 @@
+.row {
+  display: flex;
+  gap: var(--gap-sm);
+  align-items: center;
+  cursor: pointer;
+}
+
+.input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: inherit;
+}
+
+.input:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: 4px;
+}
+
+.input:disabled {
+  cursor: not-allowed;
+}
+
+.label {
+  font-size: 14px;
+  color: var(--text);
+}

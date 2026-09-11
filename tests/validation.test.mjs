@@ -144,16 +144,33 @@ test('validate: ERR-07 — превышение по обеим осям сра�
   assert.deepEqual(messagesFor(r.errors), [messages['ERR-05'], messages['ERR-06']])
 })
 
-test('validate: граница габарита ровно 320 мм проходит', () => {
-  // 4 × (77 + 3) = 320 — ровно стол H2D по короткой стороне
-  assert.deepEqual(validate(withFields({ width: '77', nx: '4' })).errors, [])
-  // 4 × (77,01 + 3) = 320,04
-  assert.deepEqual(validate(withFields({ width: '77,01', nx: '4' })).errors, ['ERR-05'])
+test('validate: без принтера предел — наибольший стол в линейке', () => {
+  // 350 × 320. По X: 5 × (67 + 3) = 350 ровно, 5 × (67,01 + 3) = 350,05.
+  assert.deepEqual(validate(withFields({ width: '67', nx: '5' })).errors, [])
+  assert.deepEqual(validate(withFields({ width: '67,01', nx: '5' })).errors, ['ERR-05'])
+  // По Y предел меньше: 4 × (77 + 3) = 320 ровно.
+  assert.deepEqual(validate(withFields({ depth: '77', ny: '4' })).errors, [])
+  assert.deepEqual(validate(withFields({ depth: '77,01', ny: '4' })).errors, ['ERR-06'])
 })
 
-test('validate: реальная подставка на стол 256 проходит', () => {
-  // 11 × 22,6 = 248,6 по X и 6 × 40 = 240 по Y
-  assert.deepEqual(validate(withFields({ nx: '11', ny: '6' })).errors, [])
+test('validate: на A1 помещается 8 × 4, а 9 × 5 уже нет', () => {
+  // Полезное поле A1 — 256 − 60 = 196. ТЗ 7.
+  const onA1 = (fields) => validate({ ...withFields(fields), printer: 'a1' })
+  assert.deepEqual(onA1({ nx: '8', ny: '4' }).errors, [])
+  assert.deepEqual(onA1({ nx: '9', ny: '5' }).errors, ['ERR-05', 'ERR-06'])
+})
+
+test('validate: на A1 mini не помещается даже 4 × 2', () => {
+  // 180 − 60 = 120: по X влезает 5 ячеек, по Y только 3.
+  const mini = { ...withFields({ nx: '4', ny: '2' }), printer: 'a1-mini' }
+  assert.deepEqual(validate(mini).errors, [])
+  assert.deepEqual(validate({ ...mini, fields: { ...mini.fields, ny: '4' } }).errors, ['ERR-06'])
+})
+
+test('validate: галочка «нет принтера» снимает вычет отступа', () => {
+  const fields = { nx: '11', ny: '6' } // 248,6 × 240
+  assert.deepEqual(validate({ ...withFields(fields), printer: 'a1' }).errors, ['ERR-05', 'ERR-06'])
+  assert.deepEqual(validate({ ...withFields(fields), printer: 'a1', noPrinter: true }).errors, [])
 })
 
 test('validate: габарит не проверяется поверх пустого поля', () => {
