@@ -6,6 +6,8 @@ import {
   setField,
   normalizeField,
   next,
+  setPrinter,
+  toggleNoPrinter,
   generateStart,
   generateOk,
   generateFail,
@@ -28,18 +30,28 @@ assert.equal(s.fields.width, '20.5')
 s = reducer(s, normalizeField('width', '20,5'))
 assert.equal(s.fields.width, '20,5')
 
-// Количество баночек и сетка описывают одно и то же: правка сетки
-// пересчитывает количество, ведущим становится последнее тронутое поле (ТЗ 4.1).
+// Количество баночек и сетка описывают одно и то же, связь двусторонняя
+// (ТЗ 4.1 и 6.3). Ведущим становится последнее тронутое поле.
 assert.equal(s.fields.jars, '9')
 s = reducer(s, normalizeField('nx', '4'))
 assert.equal(s.fields.jars, '12')
 s = reducer(s, normalizeField('ny', '5'))
 assert.equal(s.fields.jars, '20')
 
-// Правка количества сетку пока не трогает — подбор появится в G2.
+// Правка количества подбирает сетку: 17 баночек на поле без принтера.
 s = reducer(s, normalizeField('jars', '17'))
-assert.equal(s.fields.nx, '4')
-assert.equal(s.fields.ny, '5')
+assert.equal(Number(s.fields.nx) * Number(s.fields.ny) >= 17, true)
+assert.equal(s.fields.jars, '17')
+
+// Смена принтера тоже: полезное поле стало меньше, сетка пересобралась.
+s = reducer(s, setPrinter('a1-mini'))
+assert.equal(s.printer, 'a1-mini')
+assert.equal(s.noPrinter, false)
+const mini = `${s.fields.nx}×${s.fields.ny}`
+s = reducer(s, toggleNoPrinter())
+assert.equal(s.printer, null)
+assert.equal(s.noPrinter, true)
+assert.notEqual(`${s.fields.nx}×${s.fields.ny}`, mini)
 
 // Пустая сетка количество не портит: пересчитывать не из чего.
 s = reducer(s, normalizeField('nx', ''))

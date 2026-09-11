@@ -53,10 +53,14 @@ export function reducer(state, action) {
       return setFieldValue(state, action.field, action.value)
 
     // Завершение ввода: строка кладётся уже нормализованной (ТЗ 5.1).
+    // Сетку пересобирает только правка количества баночек: размеры ячейки
+    // человек правит, не трогая сетку, и переписывать её под руку незачем —
+    // если она перестала влезать, об этом скажет ERR-05 или ERR-06.
     case 'normalizeField': {
-      const next = setFieldValue(state, action.field, action.value)
-      if (action.field === 'nx' || action.field === 'ny') return syncJars(next, action.field)
-      return applyPlan(next)
+      const edited = setFieldValue(state, action.field, action.value)
+      if (action.field === 'nx' || action.field === 'ny') return syncJars(edited, action.field)
+      if (action.field === 'jars') return applyPlan(edited)
+      return edited
     }
 
     // Выбор принтера и галочка «нет принтера» исключают друг друга (ТЗ 6.2).
