@@ -13,9 +13,7 @@
     "check:geometry": "node scripts/check-geometry.mjs"
   },
   "dependencies": {
-    "brepjs": "^19.0.1",
     "manifold-3d": "^2.5.1",
-    "occt-wasm": "^4.4.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "three": "^0.186.0"

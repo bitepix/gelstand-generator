@@ -6,14 +6,14 @@
 // нижняя грань на Z = 0, габарит 67,8 × 120,0 × 15,0.
 
 import assert from 'node:assert/strict'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 import { export3MF } from '../src/export/threemf.js'
 import { exportSTL } from '../src/export/stl.js'
 import { fileName } from '../src/export/fileName.js'
 
-import { BASE, HEIGHT, PITCH_EXTRA } from '../src/constants.js'
+import { BASE, HEIGHT, CHAMFER_FOOT, CHAMFER_TOP, PITCH_EXTRA } from '../src/constants.js'
 
 let build
 try {
@@ -80,13 +80,15 @@ for (let axis = 0; axis < 3; axis += 1) {
 
 checkClosed(mesh.indices)
 
-// Уровни Z. Приёмка B2: без фасок горизонтальные грани только на трёх уровнях
-// — низ, верх основания и верх стоек (ТЗ 22, примечание про альфу).
+// Уровни Z — критерий 21а: они же в reference/ta2-1.step.
 const levels = new Set()
 for (let v = 2; v < mesh.positions.length; v += 3) {
   levels.add(Math.round(mesh.positions[v] * 1000) / 1000)
 }
-assert.deepEqual([...levels].sort((a, b) => a - b), [0, BASE, HEIGHT])
+assert.deepEqual(
+  [...levels].sort((a, b) => a - b),
+  [0, BASE, BASE + CHAMFER_FOOT, HEIGHT - CHAMFER_TOP, HEIGHT],
+)
 
 // Одна плитка — тот же путь, сетка 1 × 1.
 const tile = await build({ ...CASE, nx: 1, ny: 1 })
@@ -97,11 +99,40 @@ assert.deepEqual(tile.bbox, {
 })
 checkClosed(tile.indices)
 
+// Сверка с эталоном: объём одной плитки против reference/ta2-1.stl.
+// Расхождение допускается только на триангуляцию дуг — доли процента.
+const volumeOf = (positions, indices) => {
+  let v = 0
+  for (let i = 0; i < indices.length; i += 3) {
+    const [a, b, c] = [indices[i] * 3, indices[i + 1] * 3, indices[i + 2] * 3]
+    v += positions[a] * (positions[b + 1] * positions[c + 2] - positions[c + 1] * positions[b + 2])
+      - positions[a + 1] * (positions[b] * positions[c + 2] - positions[c] * positions[b + 2])
+      + positions[a + 2] * (positions[b] * positions[c + 1] - positions[c] * positions[b + 1])
+  }
+  return Math.abs(v / 6)
+}
+
+const stl = readFileSync(resolve(import.meta.dirname, '../reference/ta2-1.stl'))
+const facets = stl.readUInt32LE(80)
+const refPositions = new Float32Array(facets * 9)
+const refIndices = new Uint32Array(facets * 3)
+for (let f = 0; f < facets; f += 1) {
+  const at = 84 + f * 50 + 12
+  for (let k = 0; k < 9; k += 1) refPositions[f * 9 + k] = stl.readFloatLE(at + k * 4)
+  for (let k = 0; k < 3; k += 1) refIndices[f * 3 + k] = f * 3 + k
+}
+
+const mine = volumeOf(tile.positions, tile.indices)
+const reference = volumeOf(refPositions, refIndices)
+const drift = Math.abs(mine - reference) / reference
+assert.ok(drift < 0.005, `объём плитки ${mine.toFixed(2)} против эталона ${reference.toFixed(2)} мм³`)
+
 console.log(`Сетка 3 × 3 (19,6 × 37,0): ${mesh.bbox.x} × ${mesh.bbox.y} × ${mesh.bbox.z} мм`)
 console.log(`Треугольников ${triangles}, вершин ${vertices}, построение ${elapsed.toFixed(1)} мс`)
 console.log(`Одна плитка: ${tile.bbox.x} × ${tile.bbox.y} × ${tile.bbox.z} мм`)
 console.log(`Уровни Z: ${[...levels].sort((a, b) => a - b).join(' / ')}`)
-console.log('Замкнутый манифолд, положительный октант — критерий 21 пройден.')
+console.log(`Объём плитки ${mine.toFixed(2)} мм³, эталон ${reference.toFixed(2)} — расхождение ${(drift * 100).toFixed(2)} %`)
+console.log('Замкнутый манифолд, положительный октант — критерии 21 и 21а пройдены.')
 
 // Модель кладётся на диск: часть приёмки видна только в слайсере.
 const out = resolve(import.meta.dirname, '..', 'tmp')
