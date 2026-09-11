@@ -10,7 +10,7 @@ import { SIZE_MIN, DEPTH_MIN, SIZE_DECIMALS, COUNT_MIN } from '../constants.js'
 
 /** Вид поля по его имени. У глубины свой минимум, поэтому свой вид. */
 export function fieldKind(field) {
-  if (field === 'nx' || field === 'ny') return 'count'
+  if (field === 'nx' || field === 'ny' || field === 'jars') return 'count'
   return field === 'depth' ? 'depth' : 'size'
 }
 

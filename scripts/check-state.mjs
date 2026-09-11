@@ -16,7 +16,7 @@ import { snapshot, matchesModel } from '../src/state/snapshot.js'
 let s = makeInitialState()
 
 // Начальные значения — ТЗ 3, все поля строки.
-assert.deepEqual(s.fields, { width: '19,6', depth: '37', nx: '3', ny: '3' })
+assert.deepEqual(s.fields, { width: '19,6', depth: '37', jars: '9', nx: '3', ny: '3' })
 for (const v of Object.values(s.fields)) assert.equal(typeof v, 'string')
 assert.equal(s.step, 1)
 assert.equal(s.shape, 'rect')
@@ -27,6 +27,26 @@ s = reducer(s, setField('width', '20.5'))
 assert.equal(s.fields.width, '20.5')
 s = reducer(s, normalizeField('width', '20,5'))
 assert.equal(s.fields.width, '20,5')
+
+// Количество баночек и сетка описывают одно и то же: правка сетки
+// пересчитывает количество, ведущим становится последнее тронутое поле (ТЗ 4.1).
+assert.equal(s.fields.jars, '9')
+s = reducer(s, normalizeField('nx', '4'))
+assert.equal(s.fields.jars, '12')
+s = reducer(s, normalizeField('ny', '5'))
+assert.equal(s.fields.jars, '20')
+
+// Правка количества сетку пока не трогает — подбор появится в G2.
+s = reducer(s, normalizeField('jars', '17'))
+assert.equal(s.fields.nx, '4')
+assert.equal(s.fields.ny, '5')
+
+// Пустая сетка количество не портит: пересчитывать не из чего.
+s = reducer(s, normalizeField('nx', ''))
+assert.equal(s.fields.jars, '17')
+s = reducer(s, normalizeField('nx', '3'))
+s = reducer(s, normalizeField('ny', '3'))
+assert.equal(s.fields.jars, '9')
 
 // Шаги вперёд; 2 → 3 открывает третий шаг в состоянии генерации (ТЗ 8).
 s = reducer(s, next())

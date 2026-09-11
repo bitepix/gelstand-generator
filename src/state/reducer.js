@@ -5,16 +5,30 @@
 // которые вызываются до dispatch. Поэтому normalizeField получает уже
 // нормализованную строку.
 
+import { toNumber } from '../validation/normalize.js'
 import { makeInitialState } from './initial.js'
 import { snapshot } from './snapshot.js'
 
 /** Поля, которые можно менять. */
-const FIELDS = ['width', 'depth', 'nx', 'ny']
+const FIELDS = ['width', 'depth', 'jars', 'nx', 'ny']
 
 function setFieldValue(state, field, value) {
   if (!FIELDS.includes(field)) return state
   if (state.fields[field] === value) return state
   return { ...state, fields: { ...state.fields, [field]: value } }
+}
+
+/**
+ * Количество баночек и сетка описывают одно и то же, поэтому правка сетки
+ * пересчитывает количество: ведущим становится то, что человек трогал
+ * последним (ТЗ 4.1). Обратный ход — подбор сетки из количества — это G2.
+ */
+function syncJars(state, field) {
+  if (field !== 'nx' && field !== 'ny') return state
+  const nx = toNumber(state.fields.nx)
+  const ny = toNumber(state.fields.ny)
+  if (Number.isNaN(nx) || Number.isNaN(ny)) return state
+  return setFieldValue(state, 'jars', String(nx * ny))
 }
 
 export function reducer(state, action) {
@@ -25,7 +39,7 @@ export function reducer(state, action) {
 
     // Завершение ввода: строка кладётся уже нормализованной (ТЗ 5.1).
     case 'normalizeField':
-      return setFieldValue(state, action.field, action.value)
+      return syncJars(setFieldValue(state, action.field, action.value), action.field)
 
     // Переход вперёд. Возврата назад нет (ТЗ 2).
     // Шаг 2 → 3 сразу открывает третий шаг в состоянии генерации (ТЗ 8).

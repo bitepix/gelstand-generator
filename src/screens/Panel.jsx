@@ -25,6 +25,8 @@ const SIZES = [
   { field: 'depth', label: 'Глубина, мм' },
 ]
 
+const JARS = [{ field: 'jars', label: 'Сколько у вас баночек' }]
+
 const COUNTS = [
   { field: 'nx', label: 'Количество по X' },
   { field: 'ny', label: 'Количество по Y' },
@@ -43,7 +45,7 @@ export function Panel({ state, dispatch, locked = false, actions }) {
   const visible = showErrors ? errors : []
 
   const step = state.step
-  const rows = step === 1 ? SIZES : step === 2 ? COUNTS : [...SIZES, ...COUNTS]
+  const rows = step === 1 ? [...SIZES, ...JARS] : step === 2 ? COUNTS : [...SIZES, ...JARS, ...COUNTS]
 
   const change = (field, value) => dispatch(setField(field, value))
   const commit = (field, value) => {

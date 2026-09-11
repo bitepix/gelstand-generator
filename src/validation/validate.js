@@ -6,7 +6,7 @@
 import { SIZE_MAX, PITCH_EXTRA, OVERALL_MAX } from '../constants.js'
 import { toNumber } from './normalize.js'
 
-const NO_ERRORS = { width: false, depth: false, nx: false, ny: false }
+const NO_ERRORS = { width: false, depth: false, jars: false, nx: false, ny: false }
 
 /**
  * @param {{ fields: { width: string, depth: string, nx: string, ny: string } }} state
@@ -15,7 +15,7 @@ const NO_ERRORS = { width: false, depth: false, nx: false, ny: false }
  *   fields — какие поля показать в состоянии Error.
  */
 export function validate(state) {
-  const { width, depth, nx, ny } = state.fields
+  const { width, depth, jars, nx, ny } = state.fields
   const errors = []
   const fields = { ...NO_ERRORS }
 
@@ -40,6 +40,12 @@ export function validate(state) {
     errors.push('ERR-02')
     fields.width ||= widthTooBig
     fields.depth ||= depthTooBig
+  }
+
+  // ERR-11 — не указано количество баночек.
+  if (Number.isNaN(toNumber(jars))) {
+    errors.push('ERR-11')
+    fields.jars = true
   }
 
   // ERR-03, ERR-04 — пустое количество.

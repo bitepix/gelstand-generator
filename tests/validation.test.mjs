@@ -82,7 +82,7 @@ test('toNumber принимает и запятую, и точку', () => {
 test('validate: начальные значения ошибок не дают', () => {
   const r = validate(makeInitialState())
   assert.deepEqual(r.errors, [])
-  assert.deepEqual(r.fields, { width: false, depth: false, nx: false, ny: false })
+  assert.deepEqual(r.fields, { width: false, depth: false, jars: false, nx: false, ny: false })
   assert.equal(isValid(makeInitialState()), true)
 })
 
@@ -112,6 +112,12 @@ test('validate: ERR-03 и ERR-04 — пустое количество', () => {
   assert.deepEqual(validate(withFields({ nx: '', ny: '' })).errors, ['ERR-03', 'ERR-04'])
 })
 
+test('validate: ERR-11 — не указано количество баночек', () => {
+  const r = validate(withFields({ jars: '' }))
+  assert.deepEqual(r.errors, ['ERR-11'])
+  assert.equal(r.fields.jars, true)
+})
+
 test('validate: ERR-05 — превышение габарита по X', () => {
   // 5 × (100 + 3) = 515 > 320
   const r = validate(withFields({ width: '100', nx: '5' }))
@@ -134,7 +140,7 @@ test('validate: ERR-07 — превышение по обеим осям сра�
   // в одном блоке.
   const r = validate(withFields({ width: '100', nx: '5', depth: '100', ny: '5' }))
   assert.deepEqual(r.errors, ['ERR-05', 'ERR-06'])
-  assert.deepEqual(r.fields, { width: true, depth: true, nx: true, ny: true })
+  assert.deepEqual(r.fields, { width: true, depth: true, jars: false, nx: true, ny: true })
   assert.deepEqual(messagesFor(r.errors), [messages['ERR-05'], messages['ERR-06']])
 })
 
