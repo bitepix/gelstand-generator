@@ -15,6 +15,7 @@
 // такой касательной цепочке chamfer падает при любом радиусе.
 
 import * as B from 'brepjs'
+import { fuseAll } from 'brepjs'
 import { init, draw, drawingFuse, drawingCut, drawingFillet, unwrap, fuse, chamfer, edgeFinder, getBounds, mesh } from 'brepjs'
 import { fuse2D, cut2D } from 'brepjs/2d'
 
@@ -175,9 +176,20 @@ export async function build(params) {
   return meshOf(solidOf(params))
 }
 
+/** Замеры этапов: GEO_TRACE=1 node … — видно, куда уходит время. */
+const trace = (() => {
+  if (typeof process === 'undefined' || !process.env?.GEO_TRACE) return () => {}
+  let t = performance.now()
+  return (label) => {
+    console.log(`  ${label}: ${(performance.now() - t).toFixed(0)} мс`)
+    t = performance.now()
+  }
+})()
+
 export function solidOf(params) {
   const { base, posts, size } = profiles(params)
   const postC = clean(posts)
+  trace('контуры')
 
   const baseD = round2D(drawingOf(clean(base)), size, FILLET_HOLE, FILLET_HOLE)
   const postD = round2D(drawingOf(postC), size, FILLET_CONVEX, FILLET_CONCAVE)
@@ -191,6 +203,7 @@ export function solidOf(params) {
     Math.max(FILLET_CONCAVE - CHAMFER_FOOT, 0),
   )
 
+  trace('скругления')
   const ok = (label, r) => {
     if (!r.ok) throw new Error(`${label}: ${JSON.stringify(r.error).slice(0, 100)}`)
     return r.value
@@ -201,11 +214,18 @@ export function solidOf(params) {
     atLevel(BASE + CHAMFER_FOOT, size),
     CHAMFER_FOOT,
   ))
+  trace('юбка')
   const slab = baseD.clone().sketchOnPlane('XY').extrude(BASE)
-  const post = postD.clone().sketchOnPlane('XY').extrude(HEIGHT)
+  const post = postD.clone().sketchOnPlane('XY', BASE).extrude(HEIGHT - BASE)
 
-  const body = ok('приварка юбки', fuse(ok('сборка тела', fuse(slab, post)), skirt))
-  return ok('верхняя фаска', chamfer(body, atLevel(HEIGHT, size), CHAMFER_TOP))
+  trace('выдавливание')
+  // Одна N-арная склейка вместо двух парных и без истории граней: вдвое
+  // быстрее. Остальные ключи (pairwise, glue, fuzzy) на время не влияют.
+  const body = ok('сборка тела', fuseAll([slab, post, skirt], { trackHistory: false }))
+  trace('сборка')
+  const out = ok('верхняя фаска', chamfer(body, atLevel(HEIGHT, size), CHAMFER_TOP))
+  trace('верхняя фаска')
+  return out
 }
 
 function meshOf(body) {
