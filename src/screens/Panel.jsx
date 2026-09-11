@@ -20,6 +20,7 @@ import { ErrorBlock } from '../ui/ErrorBlock.jsx'
 import { validate } from '../validation/validate.js'
 import { PRINTERS, printerLabel } from '../printers.js'
 import { planFor } from '../grid/fit.js'
+import { plural } from '../validation/plural.js'
 import { setField, normalizeField, next, setPrinter, toggleNoPrinter } from '../state/reducer.js'
 import styles from './Panel.module.css'
 
@@ -124,8 +125,10 @@ export function Panel({ state, dispatch, locked = false, actions }) {
 
       {plan !== null && plan.parts > 1 && (
         <Notice>
-          Баночек больше, чем помещается на стол. Нужно {plan.parts} подставок
-          по {plan.nx * plan.ny} ячеек — скачайте файл и напечатайте его {plan.parts} раз.
+          Баночек больше, чем помещается на стол. Нужно {plan.parts}{' '}
+          {plural(plan.parts, ['подставка', 'подставки', 'подставок'])} по {plan.nx * plan.ny}{' '}
+          {plural(plan.nx * plan.ny, ['ячейке', 'ячейки', 'ячеек'])} — скачайте файл и
+          напечатайте его {plan.parts} {plural(plan.parts, ['раз', 'раза', 'раз'])}.
         </Notice>
       )}
 

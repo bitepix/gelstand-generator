@@ -5,6 +5,7 @@ import assert from 'node:assert/strict'
 import { normalize, normalizeFields, fieldKind, toNumber } from '../src/validation/normalize.js'
 import { validate, isValid, overall } from '../src/validation/validate.js'
 import { messages, messagesFor } from '../src/validation/messages.js'
+import { plural } from '../src/validation/plural.js'
 import { makeInitialState } from '../src/state/initial.js'
 
 /** Состояние с подменёнными полями. */
@@ -183,4 +184,19 @@ test('overall: реальный габарит модели', () => {
   // 3 × 22,6 = 67,8 и 3 × 40 = 120 — габарит исходной модели, ТЗ 22
   assert.ok(Math.abs(r.x - 67.8) < 1e-9)
   assert.ok(Math.abs(r.y - 120) < 1e-9)
+})
+
+test('plural: формы по последней цифре', () => {
+  const forms = ['подставка', 'подставки', 'подставок']
+  const say = (n) => `${n} ${plural(n, forms)}`
+  assert.equal(say(1), '1 подставка')
+  assert.equal(say(2), '2 подставки')
+  assert.equal(say(4), '4 подставки')
+  assert.equal(say(5), '5 подставок')
+  assert.equal(say(11), '11 подставок')
+  assert.equal(say(14), '14 подставок')
+  assert.equal(say(21), '21 подставка')
+  assert.equal(say(22), '22 подставки')
+  assert.equal(say(25), '25 подставок')
+  assert.equal(say(111), '111 подставок')
 })
