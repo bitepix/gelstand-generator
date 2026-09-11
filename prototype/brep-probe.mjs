@@ -157,3 +157,17 @@ for (const [nx, ny] of [[1, 1], [3, 3], [8, 4]]) {
   const [top, t5] = ms(() => chamfer(body, topOf(HEIGHT), CHAMFER_TOP))
   console.log(`${nx}×${ny}: контуры ${t0 + t1} мс | скругления ${t2} мс | выдавливание ${t3} мс | fuse ${t4} мс | фаска ${t5} мс (${top.ok ? 'ок' : 'падает'}) | граней ${getFaces(top.ok ? top.value : body).length}`)
 }
+
+// --- выгрузка одной плитки --------------------------------------------
+
+if (process.argv.includes('--export')) {
+  const { exportSTEP, exportSTL } = await import('brepjs/io')
+  const { writeFileSync, mkdirSync } = await import('node:fs')
+  mkdirSync(new URL('./out/', import.meta.url), { recursive: true })
+  const body = build({ width: 19.6, depth: 37, nx: 1, ny: 1 })
+  for (const [name, fn] of [['brep_1x1.step', exportSTEP], ['brep_1x1.stl', (s) => exportSTL(s, { binary: true, tolerance: 0.01, angularTolerance: 0.2 })]]) {
+    const blob = unwrap(fn(body))
+    writeFileSync(new URL(`./out/${name}`, import.meta.url), Buffer.from(await blob.arrayBuffer()))
+    console.log('записан', name)
+  }
+}

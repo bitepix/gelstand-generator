@@ -3,3 +3,5 @@ dist
 tmp
 .DS_Store
 prototype/*.log
+
+prototype/out/
