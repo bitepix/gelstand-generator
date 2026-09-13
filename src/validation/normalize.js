@@ -6,13 +6,18 @@
 // значение остаётся в поле, а поле уходит в Error (ТЗ 5.2). Пустое поле
 // тоже остаётся пустым: иначе ERR-01 и ERR-03/04 никогда бы не возникли.
 
-import { SIZE_MIN, DEPTH_MIN, SIZE_DECIMALS, COUNT_MIN } from '../constants.js'
+import { SIZE_MIN, DEPTH_MIN, DIAMETER_MIN, SIZE_DECIMALS, COUNT_MIN } from '../constants.js'
 
-/** Вид поля по его имени. У глубины свой минимум, поэтому свой вид. */
+/** Вид поля по его имени. Вид отличается минимумом, поэтому их три размерных. */
 export function fieldKind(field) {
   if (field === 'nx' || field === 'ny' || field === 'jars') return 'count'
-  return field === 'depth' ? 'depth' : 'size'
+  if (field === 'depth') return 'depth'
+  if (field === 'diameter') return 'diameter'
+  return 'size'
 }
+
+/** Нижняя граница по виду поля. */
+const MINIMUM = { size: SIZE_MIN, depth: DEPTH_MIN, diameter: DIAMETER_MIN }
 
 /**
  * Строка поля → число. Разделитель — запятая, точка тоже принимается.
@@ -32,7 +37,7 @@ export function toField(n) {
  * Приводит сырую строку поля к допустимому виду. ТЗ 5.1.
  *
  * @param {string} raw   что ввёл пользователь
- * @param {'size'|'depth'|'count'} kind
+ * @param {'size'|'depth'|'diameter'|'count'} kind
  * @returns {string}     нормализованная строка; пустая строка остаётся пустой
  */
 export function normalize(raw, kind) {
@@ -50,11 +55,11 @@ export function normalize(raw, kind) {
   // toFixed гасит двоичный хвост: без него 19,6 × 100 = 1960.0000000000002
   // и ceil дал бы 19,61.
   const rounded = Math.ceil(Number((n * factor).toFixed(6))) / factor
-  const min = kind === 'depth' ? DEPTH_MIN : SIZE_MIN
+  const min = MINIMUM[kind]
   return toField(rounded < min ? min : rounded)
 }
 
-/** Нормализует все четыре поля разом — для проверки перед генерацией (ТЗ 5.3). */
+/** Нормализует все поля разом — для проверки перед генерацией (ТЗ 5.3). */
 export function normalizeFields(fields) {
   const out = {}
   for (const [field, value] of Object.entries(fields)) {

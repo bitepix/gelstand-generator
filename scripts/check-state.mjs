@@ -18,7 +18,7 @@ import { snapshot, matchesModel } from '../src/state/snapshot.js'
 let s = makeInitialState()
 
 // Начальные значения — ТЗ 3, все поля строки.
-assert.deepEqual(s.fields, { width: '19,6', depth: '37', jars: '9', nx: '3', ny: '3' })
+assert.deepEqual(s.fields, { width: '19,6', depth: '37', diameter: '30', jars: '9', nx: '3', ny: '3' })
 for (const v of Object.values(s.fields)) assert.equal(typeof v, 'string')
 assert.equal(s.step, 1)
 assert.equal(s.shape, 'rect')

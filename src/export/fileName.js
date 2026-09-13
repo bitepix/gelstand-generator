@@ -8,11 +8,15 @@ const PREFIX = 'Nail_Modernism_Gelstand'
 const dot = (value) => String(value).replace(',', '.')
 
 /**
- * @param {{ width: string, depth: string, nx: string, ny: string }} params — поля состояния
+ * У круглой ячейки размер один — диаметр: Nail_Modernism_Gelstand_30mm_3x3.3mf
+ *
+ * @param {Record<string, string>} fields — поля состояния
  * @param {'stl'|'3mf'} ext
+ * @param {'rect'|'round'} [shape]
  * @returns {string}
  */
-export function fileName(params, ext) {
-  const { width, depth, nx, ny } = params
-  return `${PREFIX}_${dot(width)}x${dot(depth)}mm_${dot(nx)}x${dot(ny)}.${ext}`
+export function fileName(fields, ext, shape = 'rect') {
+  const { width, depth, diameter, nx, ny } = fields
+  const size = shape === 'round' ? dot(diameter) : `${dot(width)}x${dot(depth)}`
+  return `${PREFIX}_${size}mm_${dot(nx)}x${dot(ny)}.${ext}`
 }

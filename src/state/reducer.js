@@ -11,7 +11,7 @@ import { makeInitialState } from './initial.js'
 import { snapshot } from './snapshot.js'
 
 /** Поля, которые можно менять. */
-const FIELDS = ['width', 'depth', 'jars', 'nx', 'ny']
+const FIELDS = ['width', 'depth', 'diameter', 'jars', 'nx', 'ny']
 
 function setFieldValue(state, field, value) {
   if (!FIELDS.includes(field)) return state
@@ -63,6 +63,11 @@ export function reducer(state, action) {
       return edited
     }
 
+    // Смена формы ячейки пересобирает сетку: у круглой другой габарит, и
+    // прежние Nx и Ny могут перестать влезать в поле печати.
+    case 'setShape':
+      return state.shape === action.shape ? state : applyPlan({ ...state, shape: action.shape })
+
     // Выбор принтера и галочка «нет принтера» исключают друг друга (ТЗ 6.2).
     case 'setPrinter':
       return applyPlan({ ...state, printer: action.id, noPrinter: false })
@@ -108,6 +113,7 @@ export function reducer(state, action) {
 // Создатели действий — чтобы строки типов не разъезжались по компонентам.
 export const setField = (field, value) => ({ type: 'setField', field, value })
 export const normalizeField = (field, value) => ({ type: 'normalizeField', field, value })
+export const setShape = (shape) => ({ type: 'setShape', shape })
 export const setPrinter = (id) => ({ type: 'setPrinter', id })
 export const toggleNoPrinter = () => ({ type: 'toggleNoPrinter' })
 export const next = () => ({ type: 'next' })

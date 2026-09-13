@@ -83,7 +83,7 @@ test('toNumber принимает и запятую, и точку', () => {
 test('validate: начальные значения ошибок не дают', () => {
   const r = validate(makeInitialState())
   assert.deepEqual(r.errors, [])
-  assert.deepEqual(r.fields, { width: false, depth: false, jars: false, nx: false, ny: false })
+  assert.deepEqual(r.fields, { width: false, depth: false, diameter: false, jars: false, nx: false, ny: false })
   assert.equal(isValid(makeInitialState()), true)
 })
 
@@ -141,7 +141,7 @@ test('validate: ERR-07 — превышение по обеим осям сра�
   // в одном блоке.
   const r = validate(withFields({ width: '100', nx: '5', depth: '100', ny: '5' }))
   assert.deepEqual(r.errors, ['ERR-05', 'ERR-06'])
-  assert.deepEqual(r.fields, { width: true, depth: true, jars: false, nx: true, ny: true })
+  assert.deepEqual(r.fields, { width: true, depth: true, diameter: false, jars: false, nx: true, ny: true })
   assert.deepEqual(messagesFor(r.errors), [messages['ERR-05'], messages['ERR-06']])
 })
 

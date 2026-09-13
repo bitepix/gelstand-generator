@@ -29,7 +29,9 @@ const LABEL = {
 const mm = (value) => value.toFixed(1).replace('.', ',')
 
 function describe(model, snap, printer) {
-  const [, , , nx, ny] = snap.split('|')
+  // Снимок начинается с формы, дальше идут размеры — их число зависит от
+  // формы, поэтому сетка берётся с конца.
+  const [nx, ny] = snap.split('|').slice(-2)
   const { x, y, z } = model.bbox
   const size = `${mm(x)} × ${mm(y)} × ${mm(z)} мм · ${nx} × ${ny} ячейки`
   return printer ? `${size} · стол ${printer.bed.x} × ${printer.bed.y} мм` : size
@@ -40,7 +42,7 @@ function download(state) {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.download = fileName(state.fields, '3mf')
+  link.download = fileName(state.fields, '3mf', state.shape)
   link.click()
   URL.revokeObjectURL(url)
 }

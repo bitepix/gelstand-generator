@@ -36,22 +36,3 @@
   cursor: not-allowed;
   opacity: 0.5;
 }
-
-/* Пункт Soon: приглушён, курсор обычный, никакой реакции на наведение. */
-.option[data-soon] {
-  color: var(--text-muted);
-  opacity: 0.55;
-  cursor: default;
-  user-select: none;
-}
-
-.badge {
-  padding: 2px 6px;
-  font-size: 11px;
-  line-height: 1;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-inverse);
-  background: var(--text-muted);
-  border-radius: 999px;
-}

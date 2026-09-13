@@ -6,12 +6,16 @@
  * значения, поэтому snapshot вызывается уже после нормализации полей
  * (она происходит по blur, см. ТЗ 17.1).
  *
- * @param {{ shape: string, fields: { width: string, depth: string, nx: string, ny: string } }} state
+ * Размерные поля берутся по форме ячейки: у круглой ширина и глубина не
+ * участвуют, и их правка не должна делать модель устаревшей.
+ *
+ * @param {{ shape: string, fields: Record<string, string> }} state
  * @returns {string}
  */
 export function snapshot(state) {
   const { shape, fields } = state
-  return [shape, fields.width, fields.depth, fields.nx, fields.ny].join('|')
+  const size = shape === 'round' ? [fields.diameter] : [fields.width, fields.depth]
+  return [shape, ...size, fields.nx, fields.ny].join('|')
 }
 
 /** Совпадают ли текущие параметры с параметрами последней успешной модели. */

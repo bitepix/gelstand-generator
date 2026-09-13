@@ -1,46 +1,65 @@
-// Проверка параметров. ТЗ v3, разделы 5.2, 5.3, 7, 16.
+// Проверка параметров. ТЗ v4, разделы 4.2, 5.2, 5.3, 7, 16.
 //
 // Чистая функция: один и тот же результат во всех трёх точках вызова —
 // по blur, по кнопке продолжения и перед каждым запуском генерации.
+//
+// Форма ячейки меняет только набор размерных полей и формулу габарита. Сам
+// габарит считается той же функцией, что и в подборе сетки (grid/fit.js),
+// чтобы предел и подбор не разъехались.
 
 import { SIZE_MAX, PITCH_EXTRA } from '../constants.js'
 import { printField } from '../printers.js'
+import { rectSize, roundSize } from '../grid/fit.js'
 import { toNumber } from './normalize.js'
 
-const NO_ERRORS = { width: false, depth: false, jars: false, nx: false, ny: false }
+const NO_ERRORS = { width: false, depth: false, diameter: false, jars: false, nx: false, ny: false }
 
 /**
- * @param {{ fields: { width: string, depth: string, nx: string, ny: string } }} state
+ * Размерные поля формы, функция габарита и то, какое поле подсвечивать при
+ * превышении по оси. У круглой ячейки диаметр отвечает за обе оси сразу.
+ */
+function shapeOf(state) {
+  const { width, depth, diameter } = state.fields
+  if (state.shape === 'round') {
+    const d = toNumber(diameter)
+    return { sizes: { diameter: d }, size: roundSize(d), axis: { x: 'diameter', y: 'diameter' } }
+  }
+  const w = toNumber(width)
+  const p = toNumber(depth)
+  return {
+    sizes: { width: w, depth: p },
+    size: rectSize({ x: w + PITCH_EXTRA, y: p + PITCH_EXTRA }),
+    axis: { x: 'width', y: 'depth' },
+  }
+}
+
+/**
+ * @param {object} state
  * @returns {{ errors: string[], fields: Record<string, boolean> }}
  *   errors — коды в порядке ERR-01 … ERR-06;
  *   fields — какие поля показать в состоянии Error.
  */
 export function validate(state) {
-  const { width, depth, jars, nx, ny } = state.fields
+  const { jars, nx, ny } = state.fields
   const errors = []
   const fields = { ...NO_ERRORS }
 
-  const w = toNumber(width)
-  const d = toNumber(depth)
+  const { sizes, size, axis } = shapeOf(state)
   const cx = toNumber(nx)
   const cy = toNumber(ny)
 
-  // ERR-01 — пустое поле размера. Один код на оба поля, ТЗ 16.
-  const widthEmpty = Number.isNaN(w)
-  const depthEmpty = Number.isNaN(d)
-  if (widthEmpty || depthEmpty) {
+  // ERR-01 — пустое поле размера. Один код на все размерные поля, ТЗ 16.
+  const empty = Object.keys(sizes).filter((f) => Number.isNaN(sizes[f]))
+  if (empty.length > 0) {
     errors.push('ERR-01')
-    fields.width ||= widthEmpty
-    fields.depth ||= depthEmpty
+    for (const f of empty) fields[f] = true
   }
 
   // ERR-02 — размер больше 100 мм. Значение не правится автоматически.
-  const widthTooBig = !widthEmpty && w > SIZE_MAX
-  const depthTooBig = !depthEmpty && d > SIZE_MAX
-  if (widthTooBig || depthTooBig) {
+  const tooBig = Object.keys(sizes).filter((f) => !Number.isNaN(sizes[f]) && sizes[f] > SIZE_MAX)
+  if (tooBig.length > 0) {
     errors.push('ERR-02')
-    fields.width ||= widthTooBig
-    fields.depth ||= depthTooBig
+    for (const f of tooBig) fields[f] = true
   }
 
   // ERR-11 — не указано количество баночек.
@@ -59,26 +78,23 @@ export function validate(state) {
     fields.ny = true
   }
 
-  // ERR-05, ERR-06 — габарит. Формула раздела 7: считается по реальному
-  // внешнему размеру, шаг сетки = размер полости + 3,0, а предел берётся из
-  // полезного поля выбранного принтера.
-  // Ось проверяется только если обе её величины уже прошли предыдущие
-  // проверки: иначе к пустому полю добавился бы шум про габарит.
-  const axisX = !widthEmpty && !widthTooBig && !Number.isNaN(cx)
-  const axisY = !depthEmpty && !depthTooBig && !Number.isNaN(cy)
-
-  const field = printField(state)
-
-  if (axisX && cx * (w + PITCH_EXTRA) > field.x) {
-    errors.push('ERR-05')
-    fields.width = true
-    fields.nx = true
-  }
-  if (axisY && cy * (d + PITCH_EXTRA) > field.y) {
-    // Обе оси разом — это ERR-07 из таблицы 16: два сообщения в одном блоке.
-    errors.push('ERR-06')
-    fields.depth = true
-    fields.ny = true
+  // ERR-05, ERR-06 — габарит против полезного поля принтера (ТЗ 7).
+  // Считается, только если размеры и количества уже прошли проверки: иначе
+  // к пустому полю добавился бы шум про габарит.
+  if (empty.length === 0 && tooBig.length === 0 && !Number.isNaN(cx) && !Number.isNaN(cy)) {
+    const overall = size(cx, cy)
+    const field = printField(state)
+    if (overall.x > field.x) {
+      errors.push('ERR-05')
+      fields[axis.x] = true
+      fields.nx = true
+    }
+    if (overall.y > field.y) {
+      // Обе оси разом — это ERR-07 из таблицы 16: два сообщения в одном блоке.
+      errors.push('ERR-06')
+      fields[axis.y] = true
+      fields.ny = true
+    }
   }
 
   return { errors, fields }
@@ -94,9 +110,6 @@ export function isValid(state) {
  * Считается только для валидных параметров.
  */
 export function overall(state) {
-  const { width, depth, nx, ny } = state.fields
-  return {
-    x: toNumber(nx) * (toNumber(width) + PITCH_EXTRA),
-    y: toNumber(ny) * (toNumber(depth) + PITCH_EXTRA),
-  }
+  const { nx, ny } = state.fields
+  return shapeOf(state).size(toNumber(nx), toNumber(ny))
 }

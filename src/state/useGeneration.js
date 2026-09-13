@@ -21,6 +21,8 @@ export function useGeneration(state, dispatch) {
     // генерации заблокированы, но состояние всё равно не должно разъехаться
     // с тем, что посчитано.
     const params = {
+      shape: state.shape,
+      diameter: toNumber(state.fields.diameter),
       width: toNumber(state.fields.width),
       depth: toNumber(state.fields.depth),
       nx: toNumber(state.fields.nx),

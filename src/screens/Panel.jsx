@@ -21,15 +21,27 @@ import { validate } from '../validation/validate.js'
 import { PRINTERS, printerLabel } from '../printers.js'
 import { planFor } from '../grid/fit.js'
 import { plural } from '../validation/plural.js'
-import { setField, normalizeField, next, setPrinter, toggleNoPrinter } from '../state/reducer.js'
+import {
+  setField,
+  normalizeField,
+  next,
+  setShape,
+  setPrinter,
+  toggleNoPrinter,
+} from '../state/reducer.js'
 import styles from './Panel.module.css'
 
 const ERRORS_ID = 'params-errors'
 
-const SIZES = [
-  { field: 'width', label: 'Ширина, мм' },
-  { field: 'depth', label: 'Глубина, мм' },
-]
+// Размерные поля зависят от формы ячейки: у круглой один диаметр вместо
+// ширины и глубины (ТЗ 1.1).
+const SIZES = {
+  rect: [
+    { field: 'width', label: 'Ширина, мм' },
+    { field: 'depth', label: 'Глубина, мм' },
+  ],
+  round: [{ field: 'diameter', label: 'Диаметр баночки, мм' }],
+}
 
 const JARS = [{ field: 'jars', label: 'Сколько у вас баночек' }]
 
@@ -55,7 +67,8 @@ export function Panel({ state, dispatch, locked = false, actions }) {
   const step = state.step
   // Плашка о делении — не ошибка: переход она не блокирует (ТЗ 16).
   const plan = step >= 2 ? planFor(state) : null
-  const rows = step === 1 ? [...SIZES, ...JARS] : step === 2 ? COUNTS : [...SIZES, ...JARS, ...COUNTS]
+  const sizes = SIZES[state.shape]
+  const rows = step === 1 ? [...sizes, ...JARS] : step === 2 ? COUNTS : [...sizes, ...JARS, ...COUNTS]
 
   const change = (field, value) => dispatch(setField(field, value))
   const commit = (field, value) => {
@@ -76,7 +89,7 @@ export function Panel({ state, dispatch, locked = false, actions }) {
       <SegmentedControl
         shape={state.shape}
         disabled={locked}
-        onChange={() => {}}
+        onChange={(shape) => dispatch(setShape(shape))}
       />
 
       {step >= 2 && (
