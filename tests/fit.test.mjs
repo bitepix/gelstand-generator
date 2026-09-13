@@ -2,12 +2,12 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { fit, planFor } from '../src/grid/fit.js'
+import { fit, planFor, rectSize, roundSize } from '../src/grid/fit.js'
 import { printField } from '../src/printers.js'
 import { makeInitialState } from '../src/state/initial.js'
 
 /** Шаг реальной ячейки 19,6 × 37. */
-const STEP = { x: 22.6, y: 40 }
+const STEP = rectSize({ x: 22.6, y: 40 })
 const A1 = printField({ printer: 'a1', noPrinter: false }) // 196 × 196
 const BIG = printField({ printer: null, noPrinter: false }) // 350 × 320
 
@@ -45,7 +45,7 @@ test('делится ровно настолько, насколько нужн�
 })
 
 test('ячейка больше стола — подбора нет', () => {
-  assert.equal(fit(1, { x: 400, y: 40 }, A1), null)
+  assert.equal(fit(1, rectSize({ x: 400, y: 40 }), A1), null)
   assert.equal(fit(0, STEP, A1), null)
 })
 
@@ -53,4 +53,70 @@ test('planFor берёт шаг из размеров, поле из принт�
   const state = { ...makeInitialState(), printer: 'a1' }
   assert.deepEqual(planFor(state), fit(9, STEP, A1))
   assert.equal(planFor({ ...state, fields: { ...state.fields, jars: '' } }), null)
+})
+
+// --- гексагональная сетка ---
+
+test('гексагональный габарит нелинеен по X', () => {
+  // Первая колонка занимает 2 стороны, каждая следующая — полторы.
+  const size = roundSize(30)
+  const side = (2 * 17) / Math.sqrt(3)
+  assert.ok(Math.abs(size(1, 1).x - 2 * side) < 1e-9)
+  assert.ok(Math.abs(size(2, 1).x - 3.5 * side) < 1e-9)
+  assert.ok(Math.abs(size(3, 1).x - 5 * side) < 1e-9)
+})
+
+test('вторая колонка добавляет апофему к высоте, а не ряд', () => {
+  const size = roundSize(30)
+  assert.equal(size(1, 2).y, 68) // 2 × 34
+  assert.equal(size(2, 2).y, 85) // + апофема: нечётная колонка сдвинута
+  assert.equal(size(3, 2).y, 85) // третья колонка ничего не добавляет
+})
+
+test('на A1 помещается 6 × 5 баночек Ø 30', () => {
+  // Поле 196. По X: 29,445 × (nx − 1) + 39,26 ≤ 196 → nx ≤ 6.
+  // По Y при nx ≥ 2: 34 × ny + 17 ≤ 196 → ny ≤ 5.
+  const size = roundSize(30)
+  assert.ok(size(6, 5).x <= 196 && size(6, 5).y <= 196)
+  assert.ok(size(7, 5).x > 196)
+  assert.ok(size(6, 6).y > 196)
+
+  const r = fit(30, size, A1)
+  assert.equal(r.parts, 1)
+  assert.equal(r.nx * r.ny, 30)
+})
+
+test('гексагональная упаковка плотнее квадратной на том же столе', () => {
+  // Ø 30 в прямоугольной ячейке — это 30 × 30, шаг 33 × 33: на A1 влезает
+  // 5 × 5 = 25. Гексагональная берёт 6 × 5 = 30 на том же поле.
+  const square = rectSize({ x: 33, y: 33 })
+  const hexa = roundSize(30)
+  assert.equal(fit(25, square, A1).parts, 1)
+  assert.equal(fit(26, square, A1).parts, 2) // 25 — предел квадратной
+  assert.equal(fit(30, hexa, A1).parts, 1)
+  assert.equal(fit(31, hexa, A1).parts, 2) // 30 — предел гексагональной
+
+  // Выигрыш именно во вместимости: подбор под конкретное число баночек
+  // по-прежнему выбирает самую квадратную сетку, а не самую полную.
+  assert.equal(fit(100, hexa, A1).nx * fit(100, hexa, A1).ny, 25)
+})
+
+test('подбор гексагональной сетки держит квадратность подставки', () => {
+  const size = roundSize(30)
+  const r = fit(12, size, printField({ printer: null, noPrinter: false }))
+  const s = size(r.nx, r.ny)
+  // сетка 4 × 3 даёт 127,6 × 119 — почти квадрат
+  assert.equal(r.parts, 1)
+  assert.ok(Math.abs(s.x - s.y) < 0.2 * Math.max(s.x, s.y), `${s.x} × ${s.y}`)
+})
+
+test('planFor выбирает формулу по форме ячейки', () => {
+  const base = { ...makeInitialState(), printer: 'a1' }
+  const round = {
+    ...base,
+    shape: 'round',
+    fields: { ...base.fields, diameter: '30', jars: '30' },
+  }
+  assert.deepEqual(planFor(round), fit(30, roundSize(30), A1))
+  assert.equal(planFor({ ...round, fields: { ...round.fields, diameter: '' } }), null)
 })

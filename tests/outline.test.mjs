@@ -74,3 +74,51 @@ test('вершины трёх контуров отвечают друг дру�
     near(c[0][0][1], 0)
   }
 })
+
+test('общий сдвиг совпадает с прежним осевым на прямоугольных контурах', () => {
+  // Прежняя формула: горизонтальное ребро двигать по Y, вертикальное по X.
+  const axial = (contour, d, size) => {
+    const n = contour.length
+    const lines = contour.map((p, i) => {
+      const q = contour[(i + 1) % n]
+      const dx = Math.sign(q[0] - p[0])
+      const dy = Math.sign(q[1] - p[1])
+      const fixed = dy === 0 ? Math.abs(p[1]) < 1e-3 || Math.abs(p[1] - size.y) < 1e-3
+        : Math.abs(p[0]) < 1e-3 || Math.abs(p[0] - size.x) < 1e-3
+      const k = fixed ? 0 : d
+      return { horiz: dy === 0, x: p[0] + dy * k, y: p[1] - dx * k }
+    })
+    return lines.map((l, i) => {
+      const prev = lines[(i + n - 1) % n]
+      return l.horiz ? [prev.x, l.y] : [l.x, prev.y]
+    })
+  }
+
+  const cases = [
+    BRACKET,
+    [[100, 100], [105, 100], [105, 101.5], [101.5, 101.5], [101.5, 107], [100, 107]],
+    [[0, 0], [22.6, 0], [22.6, 40], [0, 40]],
+    [[3.25, 31.25], [19.35, 31.25], [19.35, 8.75], [3.25, 8.75]],
+  ]
+  for (const c of cases) {
+    for (const d of [0.5, -0.5]) {
+      // `|| 0` убирает минус-ноль: общая формула даёт −0 там, где осевая 0
+      const mine = widen(c, d, SIZE).map((p) => p.map((v) => Math.round(v * 1e9) || 0))
+      const was = axial(c, d, SIZE).map((p) => p.map((v) => Math.round(v * 1e9) || 0))
+      assert.deepEqual(mine, was, `сдвиг ${d} на ${JSON.stringify(c)}`)
+    }
+  }
+})
+
+test('сдвиг работает на наклонных рёбрах', () => {
+  // Правильный шестиугольник со стороной 10: апофема растёт на d.
+  const hex = Array.from({ length: 6 }, (_, i) => {
+    const a = (Math.PI / 3) * i
+    return [10 * Math.cos(a), 10 * Math.sin(a)]
+  })
+  const wide = widen(hex, 0.5, { x: 1e6, y: 1e6 })
+  assert.equal(wide.length, 6)
+  const radius = Math.hypot(...wide[0])
+  // описанный радиус растёт на d / cos30
+  near(radius, 10 + 0.5 / Math.cos(Math.PI / 6))
+})

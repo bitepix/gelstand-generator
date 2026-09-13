@@ -9,54 +9,85 @@
 // только потому, что они чуть ровнее: на девять баночек вышло бы 5 × 3, где
 // шесть мест пустуют, вместо 5 × 2 с одним.
 //
-// Зависимостей нет.
+// Форма ячейки сюда не проникает: подбор получает функцию габарита. У
+// прямоугольной он линеен по обеим осям, у гексагональной — нет, там ряды
+// нечётных колонок сдвинуты и к высоте добавляется апофема.
 
 import { PITCH_EXTRA } from '../constants.js'
 import { printField } from '../printers.js'
 import { toNumber } from '../validation/normalize.js'
+import { hexSize } from '../geometry/hexCell.js'
+
+const FUZZ = 1e-9
+
+/** Габарит прямоугольной подставки. */
+export const rectSize = (step) => (nx, ny) => ({ x: nx * step.x, y: ny * step.y })
+
+/** Габарит гексагональной подставки. */
+export const roundSize = (diameter) => (nx, ny) => hexSize(diameter, nx, ny)
 
 /**
  * @param {number} count    сколько баночек
- * @param {{ x: number, y: number }} step   шаг сетки, мм (размер ячейки + 3)
+ * @param {(nx: number, ny: number) => { x: number, y: number }} sizeOf габарит подставки
  * @param {{ x: number, y: number }} field  полезное поле печати, мм
  * @returns {{ nx: number, ny: number, parts: number, spare: number } | null}
  *   parts — сколько одинаковых подставок печатать;
  *   spare — сколько мест останется пустыми;
  *   null — ячейка не помещается на стол даже одна.
  */
-export function fit(count, step, field) {
-  const maxX = Math.floor(field.x / step.x)
-  const maxY = Math.floor(field.y / step.y)
-  if (maxX < 1 || maxY < 1 || !Number.isFinite(count) || count < 1) return null
+export function fit(count, sizeOf, field) {
+  if (!Number.isFinite(count) || count < 1) return null
 
-  const capacity = maxX * maxY
+  const fits = (nx, ny) => {
+    const s = sizeOf(nx, ny)
+    return s.x <= field.x + FUZZ && s.y <= field.y + FUZZ
+  }
+  if (!fits(1, 1)) return null
+
+  const maxX = span((n) => fits(n, 1))
+  const maxY = span((n) => fits(1, n))
+
+  let capacity = 0
+  for (let nx = 1; nx <= maxX; nx += 1) {
+    for (let ny = 1; ny <= maxY; ny += 1) {
+      if (fits(nx, ny)) capacity = Math.max(capacity, nx * ny)
+    }
+  }
 
   // Одна подставка, если влезает; иначе делим на равные части и берём
   // наименьшее число подставок, при котором сетка помещается.
   for (let parts = 1; parts <= count; parts += 1) {
     const need = Math.ceil(count / parts)
     if (need > capacity) continue
-    const grid = bestGrid(need, step, maxX, maxY)
+    const grid = bestGrid(need, sizeOf, fits, maxX, maxY)
     if (grid) return { ...grid, parts, spare: grid.nx * grid.ny * parts - count }
   }
   return null
 }
 
+/** Сколько подряд идущих значений от 1 проходят проверку. */
+function span(ok) {
+  let n = 0
+  while (ok(n + 1)) n += 1
+  return n
+}
+
 /** Самая квадратная сетка без лишних строк и столбцов. */
-function bestGrid(need, step, maxX, maxY) {
+function bestGrid(need, sizeOf, fits, maxX, maxY) {
   let best = null
   for (let nx = 1; nx <= maxX; nx += 1) {
     for (let ny = 1; ny <= maxY; ny += 1) {
-      if (nx * ny < need) continue
+      if (nx * ny < need || !fits(nx, ny)) continue
       // Лишняя строка или столбец: без них тоже хватает.
       if (nx > 1 && (nx - 1) * ny >= need) continue
       if (ny > 1 && nx * (ny - 1) >= need) continue
 
-      const skew = Math.abs(nx * step.x - ny * step.y)
+      const size = sizeOf(nx, ny)
+      const skew = Math.abs(size.x - size.y)
       const spare = nx * ny - need
       const better = best === null
-        || skew < best.skew - 1e-9
-        || (Math.abs(skew - best.skew) < 1e-9 && spare < best.spare)
+        || skew < best.skew - FUZZ
+        || (Math.abs(skew - best.skew) < FUZZ && spare < best.spare)
       if (better) best = { nx, ny, skew, spare }
     }
   }
@@ -64,13 +95,21 @@ function bestGrid(need, step, maxX, maxY) {
 }
 
 /**
- * То же по состоянию приложения: шаг берётся из размеров ячейки, поле — из
- * выбранного принтера. null, если параметров ещё не хватает.
+ * То же по состоянию приложения: габарит берётся из формы и размеров ячейки,
+ * поле — из выбранного принтера. null, если параметров ещё не хватает.
  */
 export function planFor(state) {
   const jars = toNumber(state.fields.jars)
+  if (Number.isNaN(jars)) return null
+
+  if (state.shape === 'round') {
+    const diameter = toNumber(state.fields.diameter)
+    if (Number.isNaN(diameter)) return null
+    return fit(jars, roundSize(diameter), printField(state))
+  }
+
   const width = toNumber(state.fields.width)
   const depth = toNumber(state.fields.depth)
-  if (Number.isNaN(jars) || Number.isNaN(width) || Number.isNaN(depth)) return null
-  return fit(jars, { x: width + PITCH_EXTRA, y: depth + PITCH_EXTRA }, printField(state))
+  if (Number.isNaN(width) || Number.isNaN(depth)) return null
+  return fit(jars, rectSize({ x: width + PITCH_EXTRA, y: depth + PITCH_EXTRA }), printField(state))
 }
