@@ -216,7 +216,16 @@ export function solidOf(wasm, params) {
  */
 export async function build(params) {
   const wasm = await warmUp()
-  const model = solidOf(wasm, params)
+  const raw = solidOf(wasm, params)
+
+  // В начало координат нижним ближним углом. Прямоугольная сетка растёт от
+  // нуля сама, а гексагональная строится от центра первой ячейки и уходит в
+  // минус по X и Y. Превью ставит модель по габариту, считая её лежащей в
+  // положительном октанте, — без этого сдвига круглая подставка выезжала за
+  // стол. Это же требует ТЗ 12.5 от выгружаемого файла.
+  const at = raw.boundingBox().min
+  const model = raw.translate([-at[0], -at[1], -at[2]])
+  raw.delete()
 
   const mesh = model.getMesh()
   const box = model.boundingBox()

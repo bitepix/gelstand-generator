@@ -18,9 +18,9 @@ test('подпись пункта: название и область через
 })
 
 test('полезное поле: стол минус отступ с каждой стороны', () => {
-  assert.deepEqual(printField({ printer: 'a1', noPrinter: false }), { x: 196, y: 196 })
-  assert.deepEqual(printField({ printer: 'h2d', noPrinter: false }), { x: 290, y: 260 })
-  assert.equal(EDGE_MARGIN, 30)
+  assert.deepEqual(printField({ printer: 'a1', noPrinter: false }), { x: 226, y: 226 })
+  assert.deepEqual(printField({ printer: 'h2d', noPrinter: false }), { x: 320, y: 290 })
+  assert.equal(EDGE_MARGIN, 15)
 })
 
 test('без принтера и при галочке — наибольший стол, без вычета', () => {

@@ -154,15 +154,15 @@ test('validate: без принтера предел — наибольший с
   assert.deepEqual(validate(withFields({ depth: '77,01', ny: '4' })).errors, ['ERR-06'])
 })
 
-test('validate: на A1 помещается 8 × 4, а 9 × 5 уже нет', () => {
-  // Полезное поле A1 — 256 − 60 = 196. ТЗ 7.
+test('validate: на A1 помещается 10 × 5, а 11 × 6 уже нет', () => {
+  // Полезное поле A1 — 256 − 30 = 226. ТЗ 7.
   const onA1 = (fields) => validate({ ...withFields(fields), printer: 'a1' })
-  assert.deepEqual(onA1({ nx: '8', ny: '4' }).errors, [])
-  assert.deepEqual(onA1({ nx: '9', ny: '5' }).errors, ['ERR-05', 'ERR-06'])
+  assert.deepEqual(onA1({ nx: '10', ny: '5' }).errors, [])
+  assert.deepEqual(onA1({ nx: '11', ny: '6' }).errors, ['ERR-05', 'ERR-06'])
 })
 
 test('validate: на A1 mini не помещается даже 4 × 2', () => {
-  // 180 − 60 = 120: по X влезает 5 ячеек, по Y только 3.
+  // 180 − 30 = 150: по X влезает 6 ячеек, по Y только 3.
   const mini = { ...withFields({ nx: '4', ny: '2' }), printer: 'a1-mini' }
   assert.deepEqual(validate(mini).errors, [])
   assert.deepEqual(validate({ ...mini, fields: { ...mini.fields, ny: '4' } }).errors, ['ERR-06'])

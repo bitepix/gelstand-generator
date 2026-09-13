@@ -38,10 +38,10 @@ assert.equal(s.fields.jars, '12')
 s = reducer(s, normalizeField('ny', '5'))
 assert.equal(s.fields.jars, '20')
 
-// Правка количества подбирает сетку: 17 баночек на поле без принтера.
-s = reducer(s, normalizeField('jars', '17'))
-assert.equal(Number(s.fields.nx) * Number(s.fields.ny) >= 17, true)
-assert.equal(s.fields.jars, '17')
+// Правка количества подбирает сетку: 24 баночки на поле без принтера.
+s = reducer(s, normalizeField('jars', '24'))
+assert.equal(Number(s.fields.nx) * Number(s.fields.ny) >= 24, true)
+assert.equal(s.fields.jars, '24')
 
 // Смена принтера тоже: полезное поле стало меньше, сетка пересобралась.
 s = reducer(s, setPrinter('a1-mini'))
@@ -55,7 +55,7 @@ assert.notEqual(`${s.fields.nx}×${s.fields.ny}`, mini)
 
 // Пустая сетка количество не портит: пересчитывать не из чего.
 s = reducer(s, normalizeField('nx', ''))
-assert.equal(s.fields.jars, '17')
+assert.equal(s.fields.jars, '24')
 s = reducer(s, normalizeField('nx', '3'))
 s = reducer(s, normalizeField('ny', '3'))
 assert.equal(s.fields.jars, '9')

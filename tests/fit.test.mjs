@@ -8,7 +8,7 @@ import { makeInitialState } from '../src/state/initial.js'
 
 /** Шаг реальной ячейки 19,6 × 37. */
 const STEP = rectSize({ x: 22.6, y: 40 })
-const A1 = printField({ printer: 'a1', noPrinter: false }) // 196 × 196
+const A1 = printField({ printer: 'a1', noPrinter: false }) // 226 × 226
 const BIG = printField({ printer: null, noPrinter: false }) // 350 × 320
 
 test('подставка, а не сетка: 9 баночек дают 5 × 2, а не 3 × 3', () => {
@@ -31,17 +31,17 @@ test('79 на большом поле — 12 × 7', () => {
 })
 
 test('не помещается — делится на равные подставки', () => {
-  // На A1 помещается 8 × 4 = 32. Сто баночек — четыре подставки по 28.
+  // На A1 помещается 10 × 5 = 50. Сто баночек — две подставки по 50.
   const r = fit(100, STEP, A1)
-  assert.equal(r.parts, 4)
+  assert.equal(r.parts, 2)
   assert.ok(r.nx * r.ny * r.parts >= 100)
   assert.equal(r.spare, r.nx * r.ny * r.parts - 100)
 })
 
 test('делится ровно настолько, насколько нужно', () => {
-  // 33 баночки на A1: вместимость 32, значит две подставки, а не три.
-  assert.equal(fit(33, STEP, A1).parts, 2)
-  assert.equal(fit(32, STEP, A1).parts, 1)
+  // 51 баночка на A1: вместимость 50, значит две подставки, а не три.
+  assert.equal(fit(51, STEP, A1).parts, 2)
+  assert.equal(fit(50, STEP, A1).parts, 1)
 })
 
 test('ячейка больше стола — подбора нет', () => {
@@ -73,32 +73,32 @@ test('вторая колонка добавляет апофему к высо�
   assert.equal(size(3, 2).y, 85) // третья колонка ничего не добавляет
 })
 
-test('на A1 помещается 6 × 5 баночек Ø 30', () => {
-  // Поле 196. По X: 29,445 × (nx − 1) + 39,26 ≤ 196 → nx ≤ 6.
-  // По Y при nx ≥ 2: 34 × ny + 17 ≤ 196 → ny ≤ 5.
+test('на A1 помещается 7 × 6 баночек Ø 30', () => {
+  // Поле 226. По X: 29,445 × (nx − 1) + 39,26 ≤ 226 → nx ≤ 7.
+  // По Y при nx ≥ 2: 34 × ny + 17 ≤ 226 → ny ≤ 6.
   const size = roundSize(30)
-  assert.ok(size(6, 5).x <= 196 && size(6, 5).y <= 196)
-  assert.ok(size(7, 5).x > 196)
-  assert.ok(size(6, 6).y > 196)
+  assert.ok(size(7, 6).x <= 226 && size(7, 6).y <= 226)
+  assert.ok(size(8, 6).x > 226)
+  assert.ok(size(7, 7).y > 226)
 
-  const r = fit(30, size, A1)
+  const r = fit(42, size, A1)
   assert.equal(r.parts, 1)
-  assert.equal(r.nx * r.ny, 30)
+  assert.equal(r.nx * r.ny, 42)
 })
 
 test('гексагональная упаковка плотнее квадратной на том же столе', () => {
   // Ø 30 в прямоугольной ячейке — это 30 × 30, шаг 33 × 33: на A1 влезает
-  // 5 × 5 = 25. Гексагональная берёт 6 × 5 = 30 на том же поле.
+  // 6 × 6 = 36. Гексагональная берёт 7 × 6 = 42 на том же поле.
   const square = rectSize({ x: 33, y: 33 })
   const hexa = roundSize(30)
-  assert.equal(fit(25, square, A1).parts, 1)
-  assert.equal(fit(26, square, A1).parts, 2) // 25 — предел квадратной
-  assert.equal(fit(30, hexa, A1).parts, 1)
-  assert.equal(fit(31, hexa, A1).parts, 2) // 30 — предел гексагональной
+  assert.equal(fit(36, square, A1).parts, 1)
+  assert.equal(fit(37, square, A1).parts, 2) // 36 — предел квадратной
+  assert.equal(fit(42, hexa, A1).parts, 1)
+  assert.equal(fit(43, hexa, A1).parts, 2) // 42 — предел гексагональной
 
   // Выигрыш именно во вместимости: подбор под конкретное число баночек
   // по-прежнему выбирает самую квадратную сетку, а не самую полную.
-  assert.equal(fit(100, hexa, A1).nx * fit(100, hexa, A1).ny, 25)
+  assert.equal(fit(100, hexa, A1).nx * fit(100, hexa, A1).ny, 35)
 })
 
 test('подбор гексагональной сетки держит квадратность подставки', () => {

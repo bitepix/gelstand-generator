@@ -14,6 +14,7 @@ import { exportSTL } from '../src/export/stl.js'
 import { fileName } from '../src/export/fileName.js'
 
 import { BASE, HEIGHT, CHAMFER_FOOT, CHAMFER_TOP, PITCH_EXTRA } from '../src/constants.js'
+import { hexSize } from '../src/geometry/hexCell.js'
 
 let build
 try {
@@ -71,12 +72,16 @@ assert.ok(triangles > 0, 'меш пуст')
 
 assert.deepEqual(mesh.bbox, EXPECTED)
 
-// Положительный октант, нижняя грань на нуле. ТЗ 12.5.
-for (let axis = 0; axis < 3; axis += 1) {
-  let min = Infinity
-  for (let v = axis; v < mesh.positions.length; v += 3) min = Math.min(min, mesh.positions[v])
-  assert.ok(Math.abs(min) < 1e-4, `по оси ${'XYZ'[axis]} модель начинается не с нуля, а с ${min}`)
+// Положительный октант, нижняя грань на нуле. ТЗ 12.5. Превью ставит модель
+// по габариту, считая её лежащей в этом октанте, — иначе она съезжает со стола.
+function checkOrigin(positions, what) {
+  for (let axis = 0; axis < 3; axis += 1) {
+    let min = Infinity
+    for (let v = axis; v < positions.length; v += 3) min = Math.min(min, positions[v])
+    assert.ok(Math.abs(min) < 1e-4, `${what}: по оси ${'XYZ'[axis]} модель начинается с ${min}, а не с нуля`)
+  }
 }
+checkOrigin(mesh.positions, 'прямоугольная 3 × 3')
 
 checkClosed(mesh.indices)
 
@@ -132,6 +137,18 @@ console.log(`Треугольников ${triangles}, вершин ${vertices}, 
 console.log(`Одна плитка: ${tile.bbox.x} × ${tile.bbox.y} × ${tile.bbox.z} мм`)
 console.log(`Уровни Z: ${[...levels].sort((a, b) => a - b).join(' / ')}`)
 console.log(`Объём плитки ${mine.toFixed(2)} мм³, эталон ${reference.toFixed(2)} — расхождение ${(drift * 100).toFixed(2)} %`)
+// Круглая ячейка: гексагональная сетка строится от центра первой ячейки и
+// без сдвига уходит в минус по X и Y.
+const hex = await build({ shape: 'round', diameter: 30, nx: 3, ny: 3 })
+checkOrigin(hex.positions, 'круглая 3 × 3')
+checkClosed(hex.indices)
+const hexExpected = hexSize(30, 3, 3)
+assert.ok(
+  Math.abs(hex.bbox.x - hexExpected.x) < 1e-3 && Math.abs(hex.bbox.y - hexExpected.y) < 1e-3,
+  `габарит круглой ${hex.bbox.x} × ${hex.bbox.y} против расчётного ${hexExpected.x} × ${hexExpected.y}`,
+)
+
+console.log(`Круглая 3 × 3 (⌀30): ${hex.bbox.x} × ${hex.bbox.y} × ${hex.bbox.z} мм`)
 console.log('Замкнутый манифолд, положительный октант — критерии 21 и 21а пройдены.')
 
 // Модель кладётся на диск: часть приёмки видна только в слайсере.
