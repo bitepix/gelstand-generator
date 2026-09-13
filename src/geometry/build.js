@@ -17,6 +17,7 @@ import Module from 'manifold-3d'
 import { BASE, HEIGHT, CHAMFER_FOOT, CHAMFER_TOP } from '../constants.js'
 import { profiles } from './profile.js'
 import { outlines } from './outline.js'
+import { hexOutline, baseHole, postContour, hexLayout } from './hexCell.js'
 
 /** WASM инициализируется один раз на всё приложение. */
 let ready = null
@@ -135,7 +136,46 @@ function positionsOf(mesh) {
  * Тело модели. Отдельно от build, чтобы проверочные скрипты могли считать
  * объём и сечения, не превращая модель в меш.
  */
+/**
+ * Круглая ячейка, гексагональная сетка. Контуры уже скруглены (hexCell.js),
+ * поэтому объединять их в 2D не нужно и нельзя: у трёх уровней разошлось бы
+ * число вершин. Каждая стойка строится отдельным столбом, соседние
+ * смыкаются уже в трёхмерном объединении.
+ */
+function roundSolid(wasm, { diameter, nx, ny }) {
+  const { Manifold, CrossSection } = wasm
+  const cells = hexLayout(diameter, nx, ny)
+  const shift = (contour, [dx, dy]) => contour.map(([x, y]) => [x + dx, y + dy])
+
+  const plate = []
+  for (const cell of cells) {
+    plate.push(shift(hexOutline(diameter), cell))
+    plate.push(shift(baseHole(diameter), cell))
+  }
+  const section = new CrossSection(plate, 'Positive')
+  const parts = [Manifold.extrude(section, BASE)]
+  section.delete()
+
+  // Три столба на ячейку. Строятся по разу и дальше только переносятся.
+  const shaftTo = HEIGHT - CHAMFER_TOP
+  for (const phi of [0, 120, 240]) {
+    const post = column(wasm, [
+      { z: BASE, rings: [postContour(diameter, CHAMFER_FOOT, phi)] },
+      { z: BASE + CHAMFER_FOOT, rings: [postContour(diameter, 0, phi)] },
+      { z: shaftTo, rings: [postContour(diameter, 0, phi)] },
+      { z: HEIGHT, rings: [postContour(diameter, -CHAMFER_TOP, phi)] },
+    ])
+    for (const [dx, dy] of cells) parts.push(post.translate([dx, dy, 0]))
+    post.delete()
+  }
+
+  const model = Manifold.union(parts)
+  for (const part of parts) part.delete()
+  return model
+}
+
 export function solidOf(wasm, params) {
+  if (params.shape === 'round') return roundSolid(wasm, params)
   const { Manifold, CrossSection } = wasm
   const { base, posts, size } = profiles(params)
 
