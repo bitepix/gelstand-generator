@@ -10,7 +10,7 @@ import {
   postContour, postContours, baseHole, hexOutline,
   HEX_WALL, HEX_LEDGE,
 } from '../src/geometry/hexCell.js'
-import { CHAMFER_FOOT, CHAMFER_TOP, FILLET_CONVEX } from '../src/constants.js'
+import { CHAMFER_FOOT, CHAMFER_TOP, FILLET_CONVEX, DIAMETER_MIN } from '../src/constants.js'
 
 const D = 50
 const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} ≈ ${b}`)
@@ -119,9 +119,19 @@ test('стойка на минимальном диаметре строится
   assert.ok(FILLET_CONVEX + CHAMFER_FOOT < m.cavity)
 })
 
-test('проём говорит понятно, когда лучи не достают', () => {
-  // При сдвиге лучей 2 мм проём вырождается ниже Ø 16,8 — вершина клина
-  // (2 × сдвиг) уходит за внутренний радиус. На Ø 20 запас всего 1,14 мм,
-  // поэтому сдвиг почти наверняка зависит от диаметра, см. reference/hex.
+test('проём говорит понятно, когда диаметр ниже предела', () => {
   assert.throws(() => baseHole(20), /луч/)
+})
+
+test('минимальный диаметр взят с запасом от предела построения', () => {
+  // Предел: holeInner > 2 × сдвиг лучей. Сдвиг равен HEX_WALL.
+  const limit = (14 * (HEX_LEDGE - HEX_WALL + 2 * HEX_WALL)) / 5
+  near(limit, 22.4)
+  assert.ok(DIAMETER_MIN > limit + 5, `${DIAMETER_MIN} должен быть заметно выше ${limit}`)
+
+  // На минимуме дуга основания под стойкой заметно толще сопла.
+  const m = hexMetrics(DIAMETER_MIN)
+  const sweep = Math.acos(HEX_WALL / m.holeInner) - Math.PI / 3
+  assert.ok(2 * sweep * m.holeInner > 2, 'дуга под стойкой короче 2 мм')
+  assert.doesNotThrow(() => baseHole(DIAMETER_MIN))
 })
