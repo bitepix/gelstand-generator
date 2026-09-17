@@ -71,6 +71,9 @@ export const DEPTH_MIN = 12
 /** Максимальный размер полости, мм. */
 export const SIZE_MAX = 100
 
+/** Сетка тестовой подставки: маленькая печать на проверку посадки. ТЗ 4.3. */
+export const TEST_GRID = 3
+
 /** Знаков после запятой в размере. */
 export const SIZE_DECIMALS = 2
 

@@ -15,3 +15,46 @@
 .actions > *:first-child {
   flex: 1;
 }
+
+/* Тестовая подставка — ссылка, а не кнопка: это боковой ход, а не
+   основное действие панели (ТЗ 4.3). */
+.test {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-xs);
+}
+
+.testLink {
+  padding: 0;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  color: var(--text);
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  align-self: flex-start;
+  cursor: pointer;
+}
+
+.testLink:hover:not(:disabled) {
+  border-bottom-color: var(--text);
+}
+
+.testLink:focus-visible {
+  outline: none;
+  border-radius: 2px;
+  box-shadow: var(--focus-ring);
+}
+
+.testLink:disabled {
+  color: var(--text-muted);
+  border-bottom-color: transparent;
+  cursor: not-allowed;
+}
+
+.hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
