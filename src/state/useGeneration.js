@@ -1,8 +1,7 @@
-// Запуск генерации по состоянию. ТЗ v3, разделы 8, 9, 16.
+// Запуск генерации по состоянию. ТЗ v5, разделы 8, 9, 16.
 //
-// Единственная точка, где приложение обращается к воркеру: как только дерево
-// состояния переходит в 'pending', начинается счёт, а уход из 'pending' или
-// размонтирование его прерывают.
+// Единственная точка, где приложение обращается к воркеру: каждый новый
+// runId начинает счёт, а следующий runId или размонтирование его прерывают.
 
 import { useEffect } from 'react'
 
@@ -12,10 +11,8 @@ import { generateOk, generateFail } from './reducer.js'
 import { snapshot } from './snapshot.js'
 
 export function useGeneration(state, dispatch) {
-  const pending = state.generation === 'pending'
-
   useEffect(() => {
-    if (!pending) return undefined
+    if (state.generation !== 'pending') return undefined
 
     // Параметры и снимок фиксируются на момент запуска: поля на время
     // генерации заблокированы, но состояние всё равно не должно разъехаться
@@ -50,7 +47,9 @@ export function useGeneration(state, dispatch) {
       alive = false
       run.cancel()
     }
-    // Намеренно только pending: перезапускать счёт на каждое изменение полей
-    // нельзя — изменение параметров генерацию не запускает (ТЗ 9.2).
-  }, [pending]) // eslint-disable-line react-hooks/exhaustive-deps
+    // Намеренно только runId: он растёт ровно на тех правках, после которых
+    // модель надо пересобрать, и прерывает прогон, если правка пришла в счёт.
+    // Ловить сами поля нельзя — пока человек печатает, в них незаконченная
+    // строка (ТЗ 9).
+  }, [state.runId]) // eslint-disable-line react-hooks/exhaustive-deps
 }

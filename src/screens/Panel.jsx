@@ -1,16 +1,11 @@
-// Панель параметров. ТЗ v4, разделы 2, 4, 6, 8, 19.
+// Единственный экран приложения. ТЗ v5, разделы 2, 4, 6, 9, 10, 15, 19.
 //
-// Карточка в левой колонке, одна на все три шага: набор полей один, меняется
-// только их видимость. Поля идут по одному в строке — колонка узкая, пара
-// полей в ряд в неё не помещается.
+// Шагов больше нет: все параметры на виду сразу, превью живое. Поэтому и
+// экран один — карточка в левой колонке, а справа модель, которая
+// пересобирается после каждой завершённой правки.
 //
-// Один компонент на все три шага: набор полей один, меняется только их
-// видимость. Отдельной вёрстки под каждый экран нет — этого прямо требует
-// раздел 19.
-//
-// Ошибки показываются не на каждое нажатие, а после завершения ввода или
-// попытки перейти дальше (ТЗ 5.3). Иначе «19,» подсвечивалось бы красным
-// прямо во время набора.
+// Ошибки показываются не на каждое нажатие, а после завершения ввода
+// (ТЗ 5.3). Иначе «19,» подсвечивалось бы красным прямо во время набора.
 
 import { useState } from 'react'
 
@@ -19,19 +14,24 @@ import { Select } from '../ui/Select.jsx'
 import { Checkbox } from '../ui/Checkbox.jsx'
 import { Notice } from '../ui/Notice.jsx'
 import { SegmentedControl } from '../ui/SegmentedControl.jsx'
-import { PrimaryButton } from '../ui/Buttons.jsx'
+import { PrimaryButton, ResetButton } from '../ui/Buttons.jsx'
 import { ErrorBlock } from '../ui/ErrorBlock.jsx'
+import { ResetConfirm } from '../ui/ResetConfirm.jsx'
 import { validate } from '../validation/validate.js'
+import { buttonState } from '../state/buttonState.js'
 import { PRINTERS, printerLabel } from '../printers.js'
 import { planFor } from '../grid/fit.js'
 import { plural } from '../validation/plural.js'
+import { export3MF } from '../export/threemf.js'
+import { fileName } from '../export/fileName.js'
 import {
   setField,
   normalizeField,
-  next,
   setShape,
   setPrinter,
   toggleNoPrinter,
+  generateStart,
+  reset,
 } from '../state/reducer.js'
 import styles from './Panel.module.css'
 
@@ -47,32 +47,39 @@ const SIZES = {
   round: [{ field: 'diameter', label: 'Диаметр баночки, мм' }],
 }
 
-const JARS = [{ field: 'jars', label: 'Сколько у вас баночек' }]
-
 const COUNTS = [
+  { field: 'jars', label: 'Сколько у вас баночек' },
   { field: 'nx', label: 'Количество по X' },
   { field: 'ny', label: 'Количество по Y' },
 ]
 
 const PRINTER_OPTIONS = PRINTERS.map((p) => ({ value: p.id, label: printerLabel(p) }))
 
-/**
- * @param {object} props
- * @param {object} props.state
- * @param {Function} props.dispatch
- * @param {boolean} [props.locked]      поля заблокированы на время генерации
- * @param {React.ReactNode} [props.actions]  кнопки шага 3 вместо «Продолжить»
- */
-export function Panel({ state, dispatch, locked = false, actions }) {
+const LABEL = { download: 'Скачать', disabled: 'Скачать', loading: 'Скачать', retry: 'Повторить' }
+
+function download(state) {
+  const blob = export3MF(state.model)
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName(state.fields, '3mf', state.shape)
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+/** @param {{ state: object, dispatch: Function }} props */
+export function Panel({ state, dispatch }) {
   const [showErrors, setShowErrors] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+
   const { errors, fields } = validate(state)
   const visible = showErrors ? errors : []
 
-  const step = state.step
-  // Плашка о делении — не ошибка: переход она не блокирует (ТЗ 16).
-  const plan = step >= 2 ? planFor(state) : null
-  const sizes = SIZES[state.shape]
-  const rows = step === 1 ? [...sizes, ...JARS] : step === 2 ? COUNTS : [...sizes, ...JARS, ...COUNTS]
+  const kind = buttonState(state)
+  const busy = kind === 'loading'
+  // Плашка о делении — не ошибка: скачивание она не блокирует (ТЗ 16).
+  const plan = planFor(state)
+  const rows = [...SIZES[state.shape], ...COUNTS]
 
   const change = (field, value) => dispatch(setField(field, value))
   const commit = (field, value) => {
@@ -80,48 +87,43 @@ export function Panel({ state, dispatch, locked = false, actions }) {
     dispatch(normalizeField(field, value))
   }
 
-  // Проверка повторяется перед переходом, независимо от предыдущих (ТЗ 5.3).
-  const forward = () => {
+  const act = () => {
+    if (kind === 'download') return download(state)
+    // Повтор после технической ошибки: параметры проверяются заново (ТЗ 5.3).
     setShowErrors(true)
-    if (validate(state).errors.length === 0) dispatch(next())
+    if (validate(state).errors.length === 0) dispatch(generateStart())
   }
 
   return (
     <section className={styles.panel}>
-      {step < 3 && <p className={styles.step}>Шаг {step} из 3</p>}
-
       <SegmentedControl
         shape={state.shape}
-        disabled={locked}
+        disabled={busy}
         onChange={(shape) => dispatch(setShape(shape))}
       />
 
-      {step >= 2 && (
-        <>
-          <Select
-            label="Принтер"
-            placeholder="Выберите модель"
-            value={state.printer}
-            options={PRINTER_OPTIONS}
-            disabled={locked || state.noPrinter}
-            onChange={(id) => dispatch(setPrinter(id))}
-          />
-          <Checkbox
-            label="У меня нет принтера"
-            checked={state.noPrinter}
-            disabled={locked}
-            onChange={() => dispatch(toggleNoPrinter())}
-          />
-          {state.noPrinter && (
-            <Notice kind="offer">
-              Купить 3D-принтер можно в магазине{' '}
-              <a href="https://3d-outlet.com/" target="_blank" rel="noreferrer">
-                3d-outlet.com
-              </a>
-              , промокод <b>NAILMOD5</b> даёт 5% скидки.
-            </Notice>
-          )}
-        </>
+      <Select
+        label="Принтер"
+        placeholder="Выберите модель"
+        value={state.printer}
+        options={PRINTER_OPTIONS}
+        disabled={busy || state.noPrinter}
+        onChange={(id) => dispatch(setPrinter(id))}
+      />
+      <Checkbox
+        label="У меня нет принтера"
+        checked={state.noPrinter}
+        disabled={busy}
+        onChange={() => dispatch(toggleNoPrinter())}
+      />
+      {state.noPrinter && (
+        <Notice kind="offer">
+          Купить 3D-принтер можно в магазине{' '}
+          <a href="https://3d-outlet.com/" target="_blank" rel="noreferrer">
+            3d-outlet.com
+          </a>
+          , промокод <b>NAILMOD5</b> даёт 5% скидки.
+        </Notice>
       )}
 
       {rows.map(({ field, label }) => (
@@ -131,7 +133,7 @@ export function Panel({ state, dispatch, locked = false, actions }) {
           label={label}
           value={state.fields[field]}
           error={showErrors && fields[field]}
-          disabled={locked}
+          disabled={busy}
           describedBy={ERRORS_ID}
           onChange={change}
           onCommit={commit}
@@ -148,12 +150,27 @@ export function Panel({ state, dispatch, locked = false, actions }) {
       )}
 
       <ErrorBlock id={ERRORS_ID} codes={visible} />
+      <ErrorBlock
+        id="generation-error"
+        codes={state.generationError ? [state.generationError] : []}
+      />
 
-      {actions ?? (
-        <PrimaryButton disabled={visible.length > 0} onClick={forward}>
-          Продолжить
+      <div className={styles.actions}>
+        <PrimaryButton loading={busy} disabled={kind === 'disabled'} onClick={act}>
+          {LABEL[kind]}
         </PrimaryButton>
-      )}
+        {/* Сброс доступен всегда, включая время генерации (ТЗ 15.1). */}
+        <ResetButton onClick={() => setConfirming(true)} />
+      </div>
+
+      <ResetConfirm
+        open={confirming}
+        onCancel={() => setConfirming(false)}
+        onConfirm={() => {
+          setConfirming(false)
+          dispatch(reset())
+        }}
+      />
     </section>
   )
 }

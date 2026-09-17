@@ -1,4 +1,4 @@
-// Редьюсер приложения. ТЗ v3, разделы 2, 8, 9, 15.
+// Редьюсер приложения. ТЗ v5, разделы 2, 8, 9, 15.
 //
 // Редьюсер только меняет состояние. Он ничего не проверяет и ничего не
 // нормализует: и то и другое — чистые функции из validation/ (задача A2),
@@ -6,6 +6,7 @@
 // нормализованную строку.
 
 import { toNumber } from '../validation/normalize.js'
+import { isValid } from '../validation/validate.js'
 import { planFor } from '../grid/fit.js'
 import { makeInitialState } from './initial.js'
 import { snapshot } from './snapshot.js'
@@ -46,6 +47,20 @@ function applyPlan(state) {
   }
 }
 
+/**
+ * Запускает пересчёт модели. Превью живое: любая завершённая правка ведёт
+ * к новой модели (ТЗ 9). Запуск помечается номером, а не флагом: правка во
+ * время счёта должна прервать текущий прогон и начать следующий, а флаг
+ * `pending` при этом не меняется и эффект бы не сработал.
+ *
+ * Невалидные параметры счёт не запускают: в превью остаётся прежняя модель,
+ * а кнопка уходит в Disabled (ТЗ 10).
+ */
+function rebuild(state) {
+  if (!isValid(state)) return state
+  return { ...state, runId: state.runId + 1, generation: 'pending', generationError: null }
+}
+
 export function reducer(state, action) {
   switch (action.type) {
     // Ввод в поле: строка кладётся как есть, без нормализации.
@@ -58,34 +73,31 @@ export function reducer(state, action) {
     // если она перестала влезать, об этом скажет ERR-05 или ERR-06.
     case 'normalizeField': {
       const edited = setFieldValue(state, action.field, action.value)
-      if (action.field === 'nx' || action.field === 'ny') return syncJars(edited, action.field)
-      if (action.field === 'jars') return applyPlan(edited)
-      return edited
+      // Значение не изменилось — пересчитывать нечего. Blur без правки
+      // случается постоянно: человек заходит в поле и уходит из него.
+      if (edited === state) return state
+      if (action.field === 'nx' || action.field === 'ny') return rebuild(syncJars(edited, action.field))
+      if (action.field === 'jars') return rebuild(applyPlan(edited))
+      return rebuild(edited)
     }
 
     // Смена формы ячейки пересобирает сетку: у круглой другой габарит, и
     // прежние Nx и Ny могут перестать влезать в поле печати.
     case 'setShape':
-      return state.shape === action.shape ? state : applyPlan({ ...state, shape: action.shape })
+      return state.shape === action.shape
+        ? state
+        : rebuild(applyPlan({ ...state, shape: action.shape }))
 
     // Выбор принтера и галочка «нет принтера» исключают друг друга (ТЗ 6.2).
     case 'setPrinter':
-      return applyPlan({ ...state, printer: action.id, noPrinter: false })
+      return rebuild(applyPlan({ ...state, printer: action.id, noPrinter: false }))
 
     case 'toggleNoPrinter':
-      return applyPlan({ ...state, noPrinter: !state.noPrinter, printer: null })
+      return rebuild(applyPlan({ ...state, noPrinter: !state.noPrinter, printer: null }))
 
-    // Переход вперёд. Возврата назад нет (ТЗ 2).
-    // Шаг 2 → 3 сразу открывает третий шаг в состоянии генерации (ТЗ 8).
-    case 'next':
-      if (state.step === 1) return { ...state, step: 2 }
-      if (state.step === 2) {
-        return { ...state, step: 3, generation: 'pending', generationError: null }
-      }
-      return state
-
+    // Повтор после технической ошибки: параметры те же, прогон новый.
     case 'generateStart':
-      return { ...state, generation: 'pending', generationError: null }
+      return { ...state, runId: state.runId + 1, generation: 'pending', generationError: null }
 
     // Новая модель заменяет старую, её параметры становятся сохранёнными.
     case 'generateOk':
@@ -101,7 +113,8 @@ export function reducer(state, action) {
     case 'generateFail':
       return { ...state, generation: 'error', generationError: action.code }
 
-    // Полный сброс: данные удаляются, шаг 1, начальные значения (ТЗ 15.1).
+    // Полный сброс: данные удаляются, начальные значения (ТЗ 15.1).
+    // Модель строится заново — makeInitialState отдаёт состояние с пересчётом.
     case 'reset':
       return makeInitialState()
 
@@ -116,7 +129,6 @@ export const normalizeField = (field, value) => ({ type: 'normalizeField', field
 export const setShape = (shape) => ({ type: 'setShape', shape })
 export const setPrinter = (id) => ({ type: 'setPrinter', id })
 export const toggleNoPrinter = () => ({ type: 'toggleNoPrinter' })
-export const next = () => ({ type: 'next' })
 export const generateStart = () => ({ type: 'generateStart' })
 export const generateOk = (model, snap) => ({ type: 'generateOk', model, snapshot: snap })
 export const generateFail = (code) => ({ type: 'generateFail', code })

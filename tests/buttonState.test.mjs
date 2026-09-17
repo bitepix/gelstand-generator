@@ -3,12 +3,20 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 import { buttonState } from '../src/state/buttonState.js'
+import {
+  reducer,
+  setField,
+  normalizeField,
+  setShape,
+  setPrinter,
+  toggleNoPrinter,
+} from '../src/state/reducer.js'
 import { makeInitialState } from '../src/state/initial.js'
 import { snapshot } from '../src/state/snapshot.js'
 
-/** Состояние шага 3 с уже построенной моделью. */
+/** Состояние с уже построенной моделью. */
 function ready(patch = {}) {
-  const base = { ...makeInitialState(), step: 3, generation: 'ready', model: {} }
+  const base = { ...makeInitialState(), generation: 'ready', model: {} }
   const state = { ...base, ...patch, fields: { ...base.fields, ...(patch.fields ?? {}) } }
   return { ...state, modelSnapshot: patch.modelSnapshot ?? snapshot(base) }
 }
@@ -34,20 +42,51 @@ test('параметры совпадают с параметрами модел
   assert.equal(buttonState(ready()), 'download')
 })
 
-test('параметры изменены и валидны — Обновить', () => {
-  assert.equal(buttonState(ready({ fields: { nx: '4' } })), 'update')
+test('ввод не закончен — Disabled: модель ещё про старые параметры', () => {
+  // Превью живое, но пересчёт идёт по завершении ввода, а не по нажатию
+  // клавиши. Пока строка в поле разошлась с моделью, скачивать нечего.
+  assert.equal(buttonState(ready({ fields: { nx: '4' } })), 'disabled')
 })
 
-test('возврат значений вручную снова даёт Скачать, без перегенерации', () => {
+test('возврат значений вручную снова даёт Скачать', () => {
   const base = ready()
   const edited = { ...base, fields: { ...base.fields, nx: '4' } }
-  assert.equal(buttonState(edited), 'update')
+  assert.equal(buttonState(edited), 'disabled')
 
   const restored = { ...edited, fields: { ...edited.fields, nx: '3' } }
   assert.equal(buttonState(restored), 'download')
 })
 
-test('модели ещё не было — Обновить, а не Скачать', () => {
-  const fresh = { ...makeInitialState(), step: 3 }
-  assert.equal(buttonState(fresh), 'update')
+test('модели ещё не было — Loading: счёт идёт с открытия', () => {
+  assert.equal(buttonState(makeInitialState()), 'loading')
+})
+
+// --- живое превью: что запускает пересчёт ---
+
+test('завершённая правка запускает пересчёт, незавершённая — нет', () => {
+  const start = makeInitialState()
+  assert.equal(reducer(start, setField('nx', '4')).runId, start.runId)
+
+  const edited = reducer(start, normalizeField('nx', '4'))
+  assert.equal(edited.runId, start.runId + 1)
+  assert.equal(edited.generation, 'pending')
+})
+
+test('blur без правки прогона не начинает', () => {
+  const start = makeInitialState()
+  assert.equal(reducer(start, normalizeField('nx', '3')), start)
+})
+
+test('невалидное значение счёт не запускает', () => {
+  const start = makeInitialState()
+  const broken = reducer(start, normalizeField('nx', ''))
+  assert.equal(broken.fields.nx, '')
+  assert.equal(broken.runId, start.runId)
+})
+
+test('смена формы и принтера тоже пересчитывают', () => {
+  const start = makeInitialState()
+  assert.equal(reducer(start, setShape('round')).runId, start.runId + 1)
+  assert.equal(reducer(start, setPrinter('a1')).runId, start.runId + 1)
+  assert.equal(reducer(start, toggleNoPrinter()).runId, start.runId + 1)
 })

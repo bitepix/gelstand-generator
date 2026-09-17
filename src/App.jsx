@@ -1,8 +1,8 @@
-// Корень приложения. ТЗ v4, разделы 2, 11, 19.
+// Корень приложения. ТЗ v5, разделы 2, 11, 19.
 //
-// Две колонки на всю высоту окна: слева узкая карточка параметров, справа
-// превью во всю оставшуюся площадь. Превью живёт здесь, а не внутри шага:
-// оно на месте с первого шага, меняются только параметры слева.
+// Две колонки на всю высоту окна: слева карточка параметров, справа превью во
+// всю оставшуюся площадь. Шагов нет — экран один, и модель в превью
+// пересобирается после каждой завершённой правки.
 
 import { useMemo, useReducer } from 'react'
 
@@ -10,7 +10,6 @@ import { reducer } from './state/reducer.js'
 import { makeInitialState } from './state/initial.js'
 import { useGeneration } from './state/useGeneration.js'
 import { Panel } from './screens/Panel.jsx'
-import { Step3 } from './screens/Step3.jsx'
 import { Preview } from './preview/Preview.jsx'
 import { findPrinter, printField } from './printers.js'
 import styles from './App.module.css'
@@ -45,13 +44,9 @@ export default function App() {
   const caption = state.model ? describe(state.model, state.modelSnapshot, printer) : null
 
   return (
-    <main className={styles.app} data-step={state.step}>
+    <main className={styles.app}>
       <div className={styles.column}>
-        {state.step === 3 ? (
-          <Step3 state={state} dispatch={dispatch} />
-        ) : (
-          <Panel state={state} dispatch={dispatch} />
-        )}
+        <Panel state={state} dispatch={dispatch} />
       </div>
 
       <Preview model={state.model} status={state.generation} caption={caption} bed={bed} />
