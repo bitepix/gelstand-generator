@@ -34,6 +34,15 @@ import styles from './Preview.module.css'
 
 const FOV = 40
 
+/**
+ * Самовращение превью. 2.0 у OrbitControls — это оборот за 30 секунд, так что
+ * 1.0 даёт минуту: заметно, что деталь живая, но следить за ней не приходится.
+ */
+const SPIN = 1.0
+
+/** Пауза после того, как мышь отпустили, прежде чем вращение вернётся. */
+const SPIN_IDLE = 2500
+
 /** Сцена, живущая между перерисовками React. */
 function createScene(canvas) {
   const renderer = new WebGLRenderer({ canvas, antialias: true })
@@ -45,6 +54,30 @@ function createScene(canvas) {
   const camera = new PerspectiveCamera(FOV, 1, 0.1, 5000)
   const controls = new OrbitControls(camera, canvas)
   controls.enableDamping = true
+
+  // Пока модель не трогают, она медленно поворачивается сама: со статичной
+  // картинки не видно ни глубины полостей, ни фасок. Как только человек берёт
+  // её мышью — вращение прекращается и возвращается через паузу.
+  //
+  // matchMedia читается на каждом возврате, а не один раз: так смена системной
+  // настройки подхватывается без подписки.
+  const calm = window.matchMedia('(prefers-reduced-motion: reduce)')
+  controls.autoRotateSpeed = SPIN
+  let idle = 0
+
+  const spin = () => {
+    controls.autoRotate = !calm.matches
+  }
+  spin()
+
+  controls.addEventListener('start', () => {
+    controls.autoRotate = false
+    clearTimeout(idle)
+  })
+  controls.addEventListener('end', () => {
+    clearTimeout(idle)
+    idle = setTimeout(spin, SPIN_IDLE)
+  })
 
   scene.add(new AmbientLight(0xffffff, 1.8))
   const key = new DirectionalLight(0xffffff, 2.2)
@@ -142,6 +175,7 @@ function createScene(canvas) {
 
     dispose() {
       cancelAnimationFrame(frame)
+      clearTimeout(idle)
       controls.dispose()
       for (const child of bedGroup.children) child.geometry.dispose()
       mesh.geometry.dispose()
