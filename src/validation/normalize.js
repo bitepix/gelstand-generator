@@ -6,7 +6,7 @@
 // значение остаётся в поле, а поле уходит в Error (ТЗ 5.2). Пустое поле
 // тоже остаётся пустым: иначе ERR-01 и ERR-03/04 никогда бы не возникли.
 
-import { SIZE_MIN, DEPTH_MIN, DIAMETER_MIN, SIZE_DECIMALS, COUNT_MIN } from '../constants.js'
+import { SIZE_MIN, DEPTH_MIN, DIAMETER_MIN, SIZE_DECIMALS, COUNT_MIN, COUNT_MAX } from '../constants.js'
 
 /** Вид поля по его имени. Вид отличается минимумом, поэтому их три размерных. */
 export function fieldKind(field) {
@@ -45,8 +45,9 @@ export function normalize(raw, kind) {
   if (Number.isNaN(n)) return ''
 
   if (kind === 'count') {
-    // Дробное округляется вверх, ноль и отрицательное поднимаются до 1 (ТЗ 5.1).
-    return String(Math.max(Math.ceil(n), COUNT_MIN))
+    // Дробное округляется вверх, ноль и отрицательное поднимаются до 1, всё
+    // сверх COUNT_MAX опускается до него (ТЗ 5.1).
+    return String(Math.min(Math.max(Math.ceil(n), COUNT_MIN), COUNT_MAX))
   }
 
   // Размер: округление до двух знаков в большую сторону, подъём до нижней

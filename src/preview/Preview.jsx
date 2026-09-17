@@ -94,6 +94,8 @@ function createScene(canvas) {
   scene.add(bedGroup)
   const bedLine = new LineBasicMaterial({ color: 0x9a9aa4 })
   const fieldLine = new LineBasicMaterial({ color: 0xc4c4cc })
+  // Подставка не влезла в полезное поле — обе рамки краснеют (ТЗ 7).
+  const overLine = new LineBasicMaterial({ color: 0xb3261e })
 
   /** Прямоугольник в плоскости XY, центром в начале координат. */
   const rectangle = (x, y, lineMaterial) => {
@@ -111,9 +113,11 @@ function createScene(canvas) {
     for (const child of bedGroup.children) child.geometry.dispose()
     bedGroup.clear()
     if (bed === null) return
-    bedGroup.add(rectangle(bed.x, bed.y, bedLine))
-    // Отступ показан отдельной линией: видно, почему предел меньше стола.
-    if (bed.field) bedGroup.add(rectangle(bed.field.x, bed.field.y, fieldLine))
+    bedGroup.add(rectangle(bed.x, bed.y, bed.over ? overLine : bedLine))
+    // Отступ показан отдельной линией: видно, почему полезное поле меньше стола.
+    if (bed.field) {
+      bedGroup.add(rectangle(bed.field.x, bed.field.y, bed.over ? overLine : fieldLine))
+    }
     bedGroup.position.z = bottom
   }
 
@@ -182,6 +186,7 @@ function createScene(canvas) {
       material.dispose()
       bedLine.dispose()
       fieldLine.dispose()
+      overLine.dispose()
       renderer.dispose()
     },
   }
@@ -192,7 +197,7 @@ function createScene(canvas) {
  * @param {{ positions: Float32Array, indices: Uint32Array, bbox: object } | null} props.model
  * @param {'idle'|'pending'|'ready'|'error'} props.status
  * @param {string} [props.caption]  строка габарита и количества ячеек
- * @param {{ x: number, y: number, field?: { x: number, y: number } } | null} [props.bed]
+ * @param {{ x: number, y: number, field?: { x: number, y: number }, over?: boolean } | null} [props.bed]
  */
 export function Preview({ model, status, caption, bed = null }) {
   const canvasRef = useRef(null)

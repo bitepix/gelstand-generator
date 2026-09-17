@@ -3,10 +3,11 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 import { normalize, normalizeFields, fieldKind, toNumber } from '../src/validation/normalize.js'
-import { validate, isValid, overall } from '../src/validation/validate.js'
+import { validate, isValid } from '../src/validation/validate.js'
 import { messages, messagesFor } from '../src/validation/messages.js'
 import { plural } from '../src/validation/plural.js'
 import { makeInitialState } from '../src/state/initial.js'
+import { COUNT_MAX } from '../src/constants.js'
 
 /** Состояние с подменёнными полями. */
 const withFields = (fields) => {
@@ -113,71 +114,16 @@ test('validate: ERR-03 и ERR-04 — пустое количество', () => {
   assert.deepEqual(validate(withFields({ nx: '', ny: '' })).errors, ['ERR-03', 'ERR-04'])
 })
 
-test('validate: ERR-05 — превышение габарита по X', () => {
-  // 5 × (100 + 3) = 515 > 320
-  const r = validate(withFields({ width: '100', nx: '5' }))
-  assert.deepEqual(r.errors, ['ERR-05'])
-  assert.equal(r.fields.width, true)
-  assert.equal(r.fields.nx, true)
-  assert.equal(r.fields.depth, false)
-  assert.equal(r.fields.ny, false)
+test('validate: габарит стола больше не ошибка', () => {
+  // Предел печати снят (ТЗ 7): подставка крупнее стола — предупреждение,
+  // контур в превью краснеет, а параметры остаются валидными.
+  assert.deepEqual(validate(withFields({ width: '100', nx: '50' })).errors, [])
+  assert.deepEqual(validate({ ...withFields({ nx: '50', ny: '50' }), printer: 'a1-mini' }).errors, [])
+  assert.equal(isValid(withFields({ width: '100', depth: '100', nx: '50', ny: '50' })), true)
 })
 
-test('validate: ERR-06 — превышение габарита по Y', () => {
-  const r = validate(withFields({ depth: '100', ny: '5' }))
-  assert.deepEqual(r.errors, ['ERR-06'])
-  assert.equal(r.fields.depth, true)
-  assert.equal(r.fields.ny, true)
-})
-
-test('validate: ERR-07 — превышение по обеим осям сразу', () => {
-  // Таблица 16: собственного текста у ERR-07 нет, это ERR-05 и ERR-06
-  // в одном блоке.
-  const r = validate(withFields({ width: '100', nx: '5', depth: '100', ny: '5' }))
-  assert.deepEqual(r.errors, ['ERR-05', 'ERR-06'])
-  assert.deepEqual(r.fields, { width: true, depth: true, diameter: false, nx: true, ny: true })
-  assert.deepEqual(messagesFor(r.errors), [messages['ERR-05'], messages['ERR-06']])
-})
-
-test('validate: без принтера предел — наибольший стол в линейке', () => {
-  // 350 × 320. По X: 5 × (67 + 3) = 350 ровно, 5 × (67,01 + 3) = 350,05.
-  assert.deepEqual(validate(withFields({ width: '67', nx: '5' })).errors, [])
-  assert.deepEqual(validate(withFields({ width: '67,01', nx: '5' })).errors, ['ERR-05'])
-  // По Y предел меньше: 4 × (77 + 3) = 320 ровно.
-  assert.deepEqual(validate(withFields({ depth: '77', ny: '4' })).errors, [])
-  assert.deepEqual(validate(withFields({ depth: '77,01', ny: '4' })).errors, ['ERR-06'])
-})
-
-test('validate: на A1 помещается 10 × 5, а 11 × 6 уже нет', () => {
-  // Полезное поле A1 — 256 − 30 = 226. ТЗ 7.
-  const onA1 = (fields) => validate({ ...withFields(fields), printer: 'a1' })
-  assert.deepEqual(onA1({ nx: '10', ny: '5' }).errors, [])
-  assert.deepEqual(onA1({ nx: '11', ny: '6' }).errors, ['ERR-05', 'ERR-06'])
-})
-
-test('validate: на A1 mini не помещается даже 4 × 2', () => {
-  // 180 − 30 = 150: по X влезает 6 ячеек, по Y только 3.
-  const mini = { ...withFields({ nx: '4', ny: '2' }), printer: 'a1-mini' }
-  assert.deepEqual(validate(mini).errors, [])
-  assert.deepEqual(validate({ ...mini, fields: { ...mini.fields, ny: '4' } }).errors, ['ERR-06'])
-})
-
-test('validate: галочка «нет принтера» снимает вычет отступа', () => {
-  const fields = { nx: '11', ny: '6' } // 248,6 × 240
-  assert.deepEqual(validate({ ...withFields(fields), printer: 'a1' }).errors, ['ERR-05', 'ERR-06'])
-  assert.deepEqual(validate({ ...withFields(fields), printer: 'a1', noPrinter: true }).errors, [])
-})
-
-test('validate: габарит не проверяется поверх пустого поля', () => {
-  const r = validate(withFields({ width: '', nx: '99' }))
-  assert.deepEqual(r.errors, ['ERR-01'])
-})
-
-test('overall: реальный габарит модели', () => {
-  const r = overall(makeInitialState())
-  // 3 × 22,6 = 67,8 и 3 × 40 = 120 — габарит исходной модели, ТЗ 22
-  assert.ok(Math.abs(r.x - 67.8) < 1e-9)
-  assert.ok(Math.abs(r.y - 120) < 1e-9)
+test('validate: пустое поле остаётся ошибкой', () => {
+  assert.deepEqual(validate(withFields({ width: '', nx: '99' })).errors, ['ERR-01'])
 })
 
 test('plural: формы по последней цифре', () => {
@@ -193,4 +139,12 @@ test('plural: формы по последней цифре', () => {
   assert.equal(say(22), '22 подставки')
   assert.equal(say(25), '25 подставок')
   assert.equal(say(111), '111 подставок')
+})
+
+test('normalize: количество по оси не уходит выше COUNT_MAX', () => {
+  // Предел не про печать, а про то, чтобы браузер пережил ввод: 999 × 999
+  // убило бы вкладку раньше, чем сработал бы тайм-аут генерации.
+  assert.equal(normalize('999', 'count'), String(COUNT_MAX))
+  assert.equal(normalize('50', 'count'), '50')
+  assert.equal(normalize('0', 'count'), '1')
 })

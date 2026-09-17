@@ -52,14 +52,12 @@ export function reducer(state, action) {
       return setFieldValue(state, action.field, action.value)
 
     // Завершение ввода: строка кладётся уже нормализованной (ТЗ 5.1).
-    // Сетку пересобирает только правка количества баночек: размеры ячейки
-    // человек правит, не трогая сетку, и переписывать её под руку незачем —
-    // если она перестала влезать, об этом скажет ERR-05 или ERR-06.
     case 'normalizeField':
       return rebuild(setFieldValue(state, action.field, action.value))
 
     // Сетку смена формы не трогает: Nx и Ny задаёт человек. Если при новом
-    // габарите они перестали влезать, об этом скажет ERR-05 или ERR-06.
+    // габарите подставка перестала влезать на стол, об этом скажет красный
+    // контур в превью (ТЗ 7).
     case 'setShape':
       return state.shape === action.shape ? state : rebuild({ ...state, shape: action.shape })
 

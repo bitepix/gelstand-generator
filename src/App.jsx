@@ -17,17 +17,23 @@ import styles from './App.module.css'
 /** Число в подпись: один знак после запятой, разделитель — запятая (ТЗ 5). */
 const mm = (value) => value.toFixed(1).replace('.', ',')
 
+/** Допуск сравнения габарита с полем: габарит приходит из меша, во float32. */
+const EPS = 0.01
+
 /**
  * Подпись описывает показанную модель, а не то, что сейчас в полях: после
  * правки параметров в превью остаётся старая модель (ТЗ 9.2, 11.4).
  *
  * Сетка берётся из снимка с конца: число размерных полей зависит от формы.
  */
-function describe(model, snap, printer) {
+function describe(model, snap, printer, over) {
   const [nx, ny] = snap.split('|').slice(-2)
   const { x, y, z } = model.bbox
   const size = `${mm(x)} × ${mm(y)} × ${mm(z)} мм · ${nx} × ${ny} ячейки`
-  return printer ? `${size} · стол ${printer.bed.x} × ${printer.bed.y} мм` : size
+  if (printer === null) return size
+  const bed = `${size} · стол ${printer.bed.x} × ${printer.bed.y} мм`
+  // Цвет контура — не единственный сигнал: он же сказан словами (ТЗ 7, 19).
+  return over ? `${bed} · не помещается` : bed
 }
 
 export default function App() {
@@ -37,11 +43,21 @@ export default function App() {
   // Стол рисуется только когда принтер выбран: при галочке «нет принтера»
   // стол неизвестен, рисовать нечего (ТЗ 11, блок H4).
   const printer = state.noPrinter ? null : findPrinter(state.printer)
+
+  // Подставка крупнее полезного поля — не ошибка, а предупреждение: контур
+  // стола краснеет (ТЗ 7). Сравнивается настоящий габарит построенной модели,
+  // а не формула по полям: она бы разошлась с геометрией.
+  const field = printer ? printField(state) : null
+  const size = state.model?.bbox
+  const over = Boolean(field && size && (size.x > field.x + EPS || size.y > field.y + EPS))
+
   const bed = useMemo(
-    () => (printer ? { ...printer.bed, field: printField(state) } : null),
-    [printer, state.noPrinter],
+    () => (printer ? { ...printer.bed, field: printField(state), over } : null),
+    [printer, over],
   )
-  const caption = state.model ? describe(state.model, state.modelSnapshot, printer) : null
+  const caption = state.model
+    ? describe(state.model, state.modelSnapshot, printer, over)
+    : null
 
   return (
     <main className={styles.app}>
