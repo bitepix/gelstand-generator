@@ -16,13 +16,16 @@ import {
   BufferGeometry,
   Color,
   DirectionalLight,
+  DoubleSide,
   Float32BufferAttribute,
   Group,
   LineBasicMaterial,
   LineLoop,
   Mesh,
+  MeshBasicMaterial,
   MeshStandardMaterial,
   PerspectiveCamera,
+  PlaneGeometry,
   Scene,
   WebGLRenderer,
 } from 'three'
@@ -94,8 +97,25 @@ function createScene(canvas) {
   scene.add(bedGroup)
   const bedLine = new LineBasicMaterial({ color: 0x9a9aa4 })
   const fieldLine = new LineBasicMaterial({ color: 0xc4c4cc })
-  // Подставка не влезла в полезное поле — обе рамки краснеют (ТЗ 7).
+  // Подставка не влезла в полезное поле — обе рамки краснеют, а сам стол
+  // подсвечивается той же краской в одну десятую силы (ТЗ 7).
   const overLine = new LineBasicMaterial({ color: 0xb3261e })
+  const overFill = new MeshBasicMaterial({
+    color: 0xb3261e,
+    transparent: true,
+    opacity: 0.1,
+    // Заливка лежит в плоскости подошвы: без этого она спорила бы с нижней
+    // гранью модели за глубину и мерцала бы при вращении.
+    depthWrite: false,
+    side: DoubleSide,
+  })
+
+  /** Заливка стола — плоскость чуть ниже подошвы, чтобы не спорить с ней. */
+  const plane = (x, y) => {
+    const mesh = new Mesh(new PlaneGeometry(x, y), overFill)
+    mesh.position.z = -0.2
+    return mesh
+  }
 
   /** Прямоугольник в плоскости XY, центром в начале координат. */
   const rectangle = (x, y, lineMaterial) => {
@@ -113,6 +133,7 @@ function createScene(canvas) {
     for (const child of bedGroup.children) child.geometry.dispose()
     bedGroup.clear()
     if (bed === null) return
+    if (bed.over) bedGroup.add(plane(bed.x, bed.y))
     bedGroup.add(rectangle(bed.x, bed.y, bed.over ? overLine : bedLine))
     // Отступ показан отдельной линией: видно, почему полезное поле меньше стола.
     if (bed.field) {
@@ -187,6 +208,7 @@ function createScene(canvas) {
       bedLine.dispose()
       fieldLine.dispose()
       overLine.dispose()
+      overFill.dispose()
       renderer.dispose()
     },
   }
