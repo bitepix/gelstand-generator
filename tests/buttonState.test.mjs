@@ -90,3 +90,23 @@ test('смена формы и принтера тоже пересчитыва�
   assert.equal(reducer(start, setPrinter('a1')).runId, start.runId + 1)
   assert.equal(reducer(start, toggleNoPrinter()).runId, start.runId + 1)
 })
+
+test('правка после набора в поле пересчитывает — setField не глушит blur', () => {
+  // Регрессия: setField кладёт строку на каждое нажатие, поэтому к моменту
+  // blur поле уже равно тому, что приходит в normalizeField. Сравнение
+  // «значение не изменилось» глушило пересчёт наглухо.
+  const start = makeInitialState()
+  const typed = reducer(start, setField('nx', '4'))
+  const done = reducer(typed, normalizeField('nx', '4'))
+  assert.equal(done.runId, start.runId + 1)
+  assert.equal(done.generation, 'pending')
+  // И количество баночек догоняет сетку (ТЗ 4.1) — раньше тоже не догоняло.
+  assert.equal(done.fields.jars, '12')
+})
+
+test('повторный blur на том же значении второй раз не считает', () => {
+  const start = makeInitialState()
+  const once = reducer(reducer(start, setField('nx', '4')), normalizeField('nx', '4'))
+  const twice = reducer(once, normalizeField('nx', '4'))
+  assert.equal(twice.runId, once.runId)
+})

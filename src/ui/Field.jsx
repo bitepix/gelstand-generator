@@ -50,6 +50,11 @@ export function Field({
         // Нормализация по завершении ввода, а не по каждому нажатию: иначе
         // «19,» превратилось бы в «19» прямо под пальцами (ТЗ 5.1).
         onBlur={(event) => onCommit(field, normalize(event.target.value, kind))}
+        // Enter завершает ввод не хуже ухода из поля: ждать, пока человек
+        // ткнёт мимо, чтобы модель пересчиталась, — так себе живое превью.
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') event.currentTarget.blur()
+        }}
       />
     </label>
   )

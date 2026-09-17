@@ -53,12 +53,25 @@ function applyPlan(state) {
  * время счёта должна прервать текущий прогон и начать следующий, а флаг
  * `pending` при этом не меняется и эффект бы не сработал.
  *
+ * Считать нечего, если параметры совпадают с теми, на которых уже запущен
+ * (или уже закончен) прогон, — за это отвечает runSnapshot. Сравнивать с
+ * прежним значением поля нельзя: `setField` кладёт строку на каждое нажатие,
+ * и к моменту blur поле давно равно тому, что пришло в normalizeField.
+ *
  * Невалидные параметры счёт не запускают: в превью остаётся прежняя модель,
  * а кнопка уходит в Disabled (ТЗ 10).
  */
 function rebuild(state) {
   if (!isValid(state)) return state
-  return { ...state, runId: state.runId + 1, generation: 'pending', generationError: null }
+  const next = snapshot(state)
+  if (next === state.runSnapshot) return state
+  return {
+    ...state,
+    runSnapshot: next,
+    runId: state.runId + 1,
+    generation: 'pending',
+    generationError: null,
+  }
 }
 
 export function reducer(state, action) {
@@ -73,9 +86,6 @@ export function reducer(state, action) {
     // если она перестала влезать, об этом скажет ERR-05 или ERR-06.
     case 'normalizeField': {
       const edited = setFieldValue(state, action.field, action.value)
-      // Значение не изменилось — пересчитывать нечего. Blur без правки
-      // случается постоянно: человек заходит в поле и уходит из него.
-      if (edited === state) return state
       if (action.field === 'nx' || action.field === 'ny') return rebuild(syncJars(edited, action.field))
       if (action.field === 'jars') return rebuild(applyPlan(edited))
       return rebuild(edited)
