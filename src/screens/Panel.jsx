@@ -1,4 +1,8 @@
-// Панель параметров. ТЗ v3, разделы 2, 4, 6, 8, 19.
+// Панель параметров. ТЗ v4, разделы 2, 4, 6, 8, 19.
+//
+// Карточка в левой колонке, одна на все три шага: набор полей один, меняется
+// только их видимость. Поля идут по одному в строке — колонка узкая, пара
+// полей в ряд в неё не помещается.
 //
 // Один компонент на все три шага: набор полей один, меняется только их
 // видимость. Отдельной вёрстки под каждый экран нет — этого прямо требует
@@ -120,21 +124,19 @@ export function Panel({ state, dispatch, locked = false, actions }) {
         </>
       )}
 
-      <div className={styles.grid}>
-        {rows.map(({ field, label }) => (
-          <Field
-            key={field}
-            field={field}
-            label={label}
-            value={state.fields[field]}
-            error={showErrors && fields[field]}
-            disabled={locked}
-            describedBy={ERRORS_ID}
-            onChange={change}
-            onCommit={commit}
-          />
-        ))}
-      </div>
+      {rows.map(({ field, label }) => (
+        <Field
+          key={field}
+          field={field}
+          label={label}
+          value={state.fields[field]}
+          error={showErrors && fields[field]}
+          disabled={locked}
+          describedBy={ERRORS_ID}
+          onChange={change}
+          onCommit={commit}
+        />
+      ))}
 
       {plan !== null && plan.parts > 1 && (
         <Notice>

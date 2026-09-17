@@ -1,15 +1,16 @@
+/* Превью занимает всю площадь справа от панели, поэтому ни рамки, ни
+   скругления у него нет: оно уходит под края окна. */
 .preview {
+  flex: 1;
+  min-width: 0;
   display: flex;
-  flex-direction: column;
-  gap: var(--gap-sm);
 }
 
 .stage {
   position: relative;
-  aspect-ratio: 4 / 3;
+  flex: 1;
+  min-width: 0;
   background: var(--bg-sunken);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
   overflow: hidden;
 }
 
@@ -44,9 +45,22 @@
   color: var(--text-muted);
 }
 
+/* Габарит показанной модели — строкой по низу сцены (ТЗ 11.4). */
 .caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 16px;
   margin: 0;
+  text-align: center;
   font-size: 13px;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 860px) {
+  .preview {
+    flex: none;
+    height: 45dvh;
+  }
 }

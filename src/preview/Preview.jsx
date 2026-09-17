@@ -208,9 +208,9 @@ export function Preview({ model, status, caption, bed = null }) {
             {status === 'error' ? 'Модель не построена' : 'Здесь появится модель'}
           </p>
         )}
-      </div>
 
-      {caption && <p className={styles.caption}>{caption}</p>}
+        {caption && <p className={styles.caption}>{caption}</p>}
+      </div>
     </div>
   )
 }

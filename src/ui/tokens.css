@@ -25,6 +25,7 @@
 
   --gap-xs: 4px;
   --gap-sm: 8px;
+  --gap-md: 12px;
   --gap: 16px;
   --gap-lg: 24px;
 
@@ -40,5 +41,5 @@ body {
   margin: 0;
   font-family: var(--font);
   color: var(--text);
-  background: var(--bg);
+  background: var(--bg-sunken);
 }

@@ -1,7 +1,7 @@
 .step {
   display: flex;
   flex-direction: column;
-  gap: var(--gap-lg);
+  gap: var(--gap-md);
 }
 
 .actions {
