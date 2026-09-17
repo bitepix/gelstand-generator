@@ -4,15 +4,15 @@
 // по blur, по кнопке продолжения и перед каждым запуском генерации.
 //
 // Форма ячейки меняет только набор размерных полей и формулу габарита. Сам
-// габарит считается той же функцией, что и в подборе сетки (grid/fit.js),
-// чтобы предел и подбор не разъехались.
+// габарит считается той же функцией, что и в геометрии (grid/size.js),
+// чтобы предел и построение не разъехались.
 
 import { SIZE_MAX, PITCH_EXTRA } from '../constants.js'
 import { printField } from '../printers.js'
-import { rectSize, roundSize } from '../grid/fit.js'
+import { rectSize, roundSize } from '../grid/size.js'
 import { toNumber } from './normalize.js'
 
-const NO_ERRORS = { width: false, depth: false, diameter: false, jars: false, nx: false, ny: false }
+const NO_ERRORS = { width: false, depth: false, diameter: false, nx: false, ny: false }
 
 /**
  * Размерные поля формы, функция габарита и то, какое поле подсвечивать при
@@ -40,7 +40,7 @@ function shapeOf(state) {
  *   fields — какие поля показать в состоянии Error.
  */
 export function validate(state) {
-  const { jars, nx, ny } = state.fields
+  const { nx, ny } = state.fields
   const errors = []
   const fields = { ...NO_ERRORS }
 
@@ -60,12 +60,6 @@ export function validate(state) {
   if (tooBig.length > 0) {
     errors.push('ERR-02')
     for (const f of tooBig) fields[f] = true
-  }
-
-  // ERR-11 — не указано количество баночек.
-  if (Number.isNaN(toNumber(jars))) {
-    errors.push('ERR-11')
-    fields.jars = true
   }
 
   // ERR-03, ERR-04 — пустое количество.

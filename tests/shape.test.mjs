@@ -3,7 +3,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { reducer, setShape, setField } from '../src/state/reducer.js'
+import { reducer, setShape } from '../src/state/reducer.js'
 import { makeInitialState } from '../src/state/initial.js'
 import { snapshot, matchesModel } from '../src/state/snapshot.js'
 import { fileName } from '../src/export/fileName.js'
@@ -24,9 +24,12 @@ test('повторный выбор той же формы ничего не м�
   assert.equal(reducer(state, setShape('rect')), state)
 })
 
-test('смена формы пересобирает сетку под новый габарит', () => {
-  const state = round(reducer(makeInitialState(), setField('jars', '9')))
-  assert.equal(Number(state.fields.nx) * Number(state.fields.ny) >= 1, true)
+test('смена формы сетку не трогает, но запускает пересчёт', () => {
+  const before = makeInitialState()
+  const state = round(before)
+  assert.equal(state.fields.nx, before.fields.nx)
+  assert.equal(state.fields.ny, before.fields.ny)
+  assert.equal(state.runId, before.runId + 1)
 })
 
 test('у круглой формы проверяется диаметр, а не ширина', () => {

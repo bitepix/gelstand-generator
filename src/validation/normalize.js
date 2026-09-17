@@ -10,7 +10,7 @@ import { SIZE_MIN, DEPTH_MIN, DIAMETER_MIN, SIZE_DECIMALS, COUNT_MIN } from '../
 
 /** Вид поля по его имени. Вид отличается минимумом, поэтому их три размерных. */
 export function fieldKind(field) {
-  if (field === 'nx' || field === 'ny' || field === 'jars') return 'count'
+  if (field === 'nx' || field === 'ny') return 'count'
   if (field === 'depth') return 'depth'
   if (field === 'diameter') return 'diameter'
   return 'size'

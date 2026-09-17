@@ -84,11 +84,12 @@ test('невалидное значение счёт не запускает', (
   assert.equal(broken.runId, start.runId)
 })
 
-test('смена формы и принтера тоже пересчитывают', () => {
+test('форма пересчитывает, принтер — нет: модель от принтера не зависит', () => {
   const start = makeInitialState()
   assert.equal(reducer(start, setShape('round')).runId, start.runId + 1)
-  assert.equal(reducer(start, setPrinter('a1')).runId, start.runId + 1)
-  assert.equal(reducer(start, toggleNoPrinter()).runId, start.runId + 1)
+  // Принтер меняет только предел габарита и стол в превью (ТЗ 7, 11).
+  assert.equal(reducer(start, setPrinter('a1')).runId, start.runId)
+  assert.equal(reducer(start, toggleNoPrinter()).runId, start.runId)
 })
 
 test('правка после набора в поле пересчитывает — setField не глушит blur', () => {
@@ -100,8 +101,6 @@ test('правка после набора в поле пересчитывае�
   const done = reducer(typed, normalizeField('nx', '4'))
   assert.equal(done.runId, start.runId + 1)
   assert.equal(done.generation, 'pending')
-  // И количество баночек догоняет сетку (ТЗ 4.1) — раньше тоже не догоняло.
-  assert.equal(done.fields.jars, '12')
 })
 
 test('повторный blur на том же значении второй раз не считает', () => {

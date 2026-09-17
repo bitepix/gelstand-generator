@@ -17,7 +17,7 @@ import { snapshot, matchesModel } from '../src/state/snapshot.js'
 let s = makeInitialState()
 
 // Начальные значения — ТЗ 3, все поля строки.
-assert.deepEqual(s.fields, { width: '19,6', depth: '37', diameter: '30', jars: '9', nx: '3', ny: '3' })
+assert.deepEqual(s.fields, { width: '19,6', depth: '37', diameter: '30', nx: '3', ny: '3' })
 for (const v of Object.values(s.fields)) assert.equal(typeof v, 'string')
 assert.equal(s.shape, 'rect')
 assert.equal(s.generation, 'pending') // счёт идёт с открытия
@@ -28,35 +28,21 @@ assert.equal(s.fields.width, '20.5')
 s = reducer(s, normalizeField('width', '20,5'))
 assert.equal(s.fields.width, '20,5')
 
-// Количество баночек и сетка описывают одно и то же, связь двусторонняя
-// (ТЗ 4.1 и 6.3). Ведущим становится последнее тронутое поле.
-assert.equal(s.fields.jars, '9')
-s = reducer(s, normalizeField('nx', '4'))
-assert.equal(s.fields.jars, '12')
-s = reducer(s, normalizeField('ny', '5'))
-assert.equal(s.fields.jars, '20')
-
-// Правка количества подбирает сетку: 24 баночки на поле без принтера.
-s = reducer(s, normalizeField('jars', '24'))
-assert.equal(Number(s.fields.nx) * Number(s.fields.ny) >= 24, true)
-assert.equal(s.fields.jars, '24')
-
-// Смена принтера тоже: полезное поле стало меньше, сетка пересобралась.
+// Принтер модель не меняет: он задаёт предел габарита и стол в превью, но
+// сетку человек ставит сам (ТЗ 6.1, 7, 11).
+const beforePrinter = s.runId
 s = reducer(s, setPrinter('a1-mini'))
 assert.equal(s.printer, 'a1-mini')
 assert.equal(s.noPrinter, false)
-const mini = `${s.fields.nx}×${s.fields.ny}`
+assert.equal(s.runId, beforePrinter)
 s = reducer(s, toggleNoPrinter())
 assert.equal(s.printer, null)
 assert.equal(s.noPrinter, true)
-assert.notEqual(`${s.fields.nx}×${s.fields.ny}`, mini)
+assert.equal(s.runId, beforePrinter)
 
-// Пустая сетка количество не портит: пересчитывать не из чего.
-s = reducer(s, normalizeField('nx', ''))
-assert.equal(s.fields.jars, '24')
 s = reducer(s, normalizeField('nx', '3'))
 s = reducer(s, normalizeField('ny', '3'))
-assert.equal(s.fields.jars, '9')
+assert.equal(s.fields.nx, '3')
 
 // Превью живое: завершённая правка сама запускает пересчёт (ТЗ 9).
 assert.equal(s.generation, 'pending')
@@ -74,7 +60,7 @@ s = reducer(s, normalizeField('nx', ''))
 assert.equal(s.runId, beforeBad)
 
 s = reducer(s, normalizeField('nx', '3'))
-assert.equal(s.fields.jars, '9')
+assert.equal(s.fields.nx, '3')
 
 // Успех: модель и снимок её параметров.
 const mesh = { positions: new Float32Array(0), indices: new Uint32Array(0) }

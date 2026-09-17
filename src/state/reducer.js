@@ -5,46 +5,17 @@
 // которые вызываются до dispatch. Поэтому normalizeField получает уже
 // нормализованную строку.
 
-import { toNumber } from '../validation/normalize.js'
 import { isValid } from '../validation/validate.js'
-import { planFor } from '../grid/fit.js'
 import { makeInitialState } from './initial.js'
 import { snapshot } from './snapshot.js'
 
 /** Поля, которые можно менять. */
-const FIELDS = ['width', 'depth', 'diameter', 'jars', 'nx', 'ny']
+const FIELDS = ['width', 'depth', 'diameter', 'nx', 'ny']
 
 function setFieldValue(state, field, value) {
   if (!FIELDS.includes(field)) return state
   if (state.fields[field] === value) return state
   return { ...state, fields: { ...state.fields, [field]: value } }
-}
-
-/**
- * Количество баночек и сетка описывают одно и то же, поэтому правка сетки
- * пересчитывает количество: ведущим становится то, что человек трогал
- * последним (ТЗ 4.1). Обратный ход — подбор сетки из количества — это G2.
- */
-function syncJars(state, field) {
-  if (field !== 'nx' && field !== 'ny') return state
-  const nx = toNumber(state.fields.nx)
-  const ny = toNumber(state.fields.ny)
-  if (Number.isNaN(nx) || Number.isNaN(ny)) return state
-  return setFieldValue(state, 'jars', String(nx * ny))
-}
-
-/**
- * Обратный ход: количество баночек и стол задают сетку (ТЗ 6.3). Подбор —
- * подсказка, а не запрет: Nx и Ny остаются доступными для правки, и правка
- * снова делает ведущим их.
- */
-function applyPlan(state) {
-  const plan = planFor(state)
-  if (plan === null) return state
-  return {
-    ...state,
-    fields: { ...state.fields, nx: String(plan.nx), ny: String(plan.ny) },
-  }
 }
 
 /**
@@ -84,26 +55,20 @@ export function reducer(state, action) {
     // Сетку пересобирает только правка количества баночек: размеры ячейки
     // человек правит, не трогая сетку, и переписывать её под руку незачем —
     // если она перестала влезать, об этом скажет ERR-05 или ERR-06.
-    case 'normalizeField': {
-      const edited = setFieldValue(state, action.field, action.value)
-      if (action.field === 'nx' || action.field === 'ny') return rebuild(syncJars(edited, action.field))
-      if (action.field === 'jars') return rebuild(applyPlan(edited))
-      return rebuild(edited)
-    }
+    case 'normalizeField':
+      return rebuild(setFieldValue(state, action.field, action.value))
 
-    // Смена формы ячейки пересобирает сетку: у круглой другой габарит, и
-    // прежние Nx и Ny могут перестать влезать в поле печати.
+    // Сетку смена формы не трогает: Nx и Ny задаёт человек. Если при новом
+    // габарите они перестали влезать, об этом скажет ERR-05 или ERR-06.
     case 'setShape':
-      return state.shape === action.shape
-        ? state
-        : rebuild(applyPlan({ ...state, shape: action.shape }))
+      return state.shape === action.shape ? state : rebuild({ ...state, shape: action.shape })
 
     // Выбор принтера и галочка «нет принтера» исключают друг друга (ТЗ 6.2).
     case 'setPrinter':
-      return rebuild(applyPlan({ ...state, printer: action.id, noPrinter: false }))
+      return { ...state, printer: action.id, noPrinter: false }
 
     case 'toggleNoPrinter':
-      return rebuild(applyPlan({ ...state, noPrinter: !state.noPrinter, printer: null }))
+      return { ...state, noPrinter: !state.noPrinter, printer: null }
 
     // Повтор после технической ошибки: параметры те же, прогон новый.
     case 'generateStart':

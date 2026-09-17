@@ -24,7 +24,6 @@ import { buttonState } from '../state/buttonState.js'
 import { paramsOf } from '../state/useGeneration.js'
 import { generate } from '../worker/index.js'
 import { PRINTERS, printerLabel } from '../printers.js'
-import { planFor } from '../grid/fit.js'
 import { plural } from '../validation/plural.js'
 import { export3MF } from '../export/threemf.js'
 import { fileName } from '../export/fileName.js'
@@ -52,10 +51,20 @@ const SIZES = {
 }
 
 const COUNTS = [
-  { field: 'jars', label: 'Сколько у вас баночек' },
   { field: 'nx', label: 'Количество по X' },
   { field: 'ny', label: 'Количество по Y' },
 ]
+
+/**
+ * Сколько баночек даёт заданная сетка. Люди считают баночками, а не сеткой,
+ * поэтому произведение написано словами — отдельного поля для него нет
+ * (ТЗ 6.3). Пока сетка не задана целиком, считать нечего.
+ */
+function jarsLine(fields) {
+  const count = toNumber(fields.nx) * toNumber(fields.ny)
+  if (!Number.isFinite(count) || count < 1) return null
+  return `Сетка на ${count} ${plural(count, ['баночку', 'баночки', 'баночек'])}`
+}
 
 const PRINTER_OPTIONS = PRINTERS.map((p) => ({ value: p.id, label: printerLabel(p) }))
 
@@ -93,8 +102,7 @@ export function Panel({ state, dispatch }) {
 
   const kind = buttonState(state)
   const busy = kind === 'loading'
-  // Плашка о делении — не ошибка: скачивание она не блокирует (ТЗ 16).
-  const plan = planFor(state)
+  const grid = jarsLine(state.fields)
 
   const change = (field, value) => dispatch(setField(field, value))
   const commit = (field, value) => {
@@ -202,14 +210,7 @@ export function Panel({ state, dispatch }) {
         />
       ))}
 
-      {plan !== null && plan.parts > 1 && (
-        <Notice>
-          Баночек больше, чем помещается на стол. Нужно {plan.parts}{' '}
-          {plural(plan.parts, ['подставка', 'подставки', 'подставок'])} по {plan.nx * plan.ny}{' '}
-          {plural(plan.nx * plan.ny, ['ячейке', 'ячейки', 'ячеек'])} — скачайте файл и
-          напечатайте его {plan.parts} {plural(plan.parts, ['раз', 'раза', 'раз'])}.
-        </Notice>
-      )}
+      {grid && <p className={styles.hint}>{grid}</p>}
 
       <ErrorBlock id={ERRORS_ID} codes={visible} />
       <ErrorBlock
