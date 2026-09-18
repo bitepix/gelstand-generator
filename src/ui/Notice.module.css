@@ -8,39 +8,23 @@
   border-radius: var(--radius);
 }
 
-/* Баннер магазина: голубое пятно и логотип справа, текст слева. Логотип —
-   файл public/3d-outlet.png; без него остаётся одно пятно, и это не ломает
-   вёрстку. */
+/* Баннер магазина: фон целиком — одна картинка из макета (голубая заливка,
+   рамка и логотип уже в ней). Текст слева, шириной 172 px, как в макете. */
 .notice[data-kind='offer'] {
-  position: relative;
-  overflow: hidden;
+  display: flex;
+  align-items: center;
   min-height: 96px;
-  padding: 12px 120px 12px 14px;
+  padding: 12px 110px 12px 14px;
   font-size: 13px;
-  background: var(--bg);
-}
-
-.notice[data-kind='offer']::before {
-  content: '';
-  position: absolute;
-  top: 13px;
-  right: -20px;
-  width: 150px;
-  height: 150px;
-  border-radius: 50%;
-  background: #b4f5ff;
-}
-
-.notice[data-kind='offer']::after {
-  content: '';
-  position: absolute;
-  top: -4px;
-  right: -10px;
-  width: 103px;
-  height: 98px;
-  background: url('/3d-outlet.png') center / contain no-repeat;
+  line-height: 18px;
+  background: url('/banner.jpg') center / cover no-repeat;
 }
 
 .notice a {
   color: inherit;
+}
+
+/* Ссылка на магазин — фирменный голубой из макета. */
+.notice[data-kind='offer'] a {
+  color: #09b5cb;
 }

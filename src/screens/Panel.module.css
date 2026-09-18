@@ -47,15 +47,11 @@
 .testLink {
   padding: 0;
   font: inherit;
-  color: var(--text);
+  color: var(--accent);
+  text-decoration: underline;
   background: none;
   border: 0;
-  border-bottom: 1px solid var(--text-muted);
   cursor: pointer;
-}
-
-.testLink:hover:not(:disabled) {
-  border-bottom-color: var(--text);
 }
 
 .testLink:focus-visible {
@@ -66,7 +62,7 @@
 
 .testLink:disabled {
   color: var(--text-muted);
-  border-bottom-color: transparent;
+  text-decoration-color: transparent;
   cursor: not-allowed;
 }
 

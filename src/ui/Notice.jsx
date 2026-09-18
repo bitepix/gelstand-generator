@@ -7,13 +7,15 @@ import styles from './Notice.module.css'
 
 /**
  * @param {object} props
- * @param {'offer'|'info'} [props.kind]  offer — жёлтая, info — нейтральная
+ * @param {'offer'|'info'} [props.kind]  offer — баннер магазина, info — нейтральная
  * @param {React.ReactNode} props.children
  */
 export function Notice({ kind = 'info', children }) {
   return (
     <p className={styles.notice} data-kind={kind}>
-      {children}
+      {/* Обёртка нужна флексу: без неё строка распалась бы на отдельные
+          флекс-элементы по каждому <b> и куску текста. */}
+      <span>{children}</span>
     </p>
   )
 }
