@@ -1,16 +1,12 @@
 .field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-xs);
-}
-
-.label {
-  font-size: 13px;
-  color: var(--text-muted);
+  position: relative;
+  flex: 1;
+  min-width: 0;
 }
 
 .input {
-  height: var(--control-height);
+  width: 100%;
+  height: var(--field-height);
   padding: 0 12px;
   font: inherit;
   font-size: 16px; /* меньше 16px — Safari на iOS зумит страницу при фокусе */
@@ -19,6 +15,21 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   outline: none;
+}
+
+/* Место под единицу измерения справа, чтобы длинное число под неё не заезжало. */
+.field[data-suffix] .input {
+  padding-right: 36px;
+}
+
+.suffix {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: var(--text-muted);
+  pointer-events: none;
 }
 
 .input:focus-visible {

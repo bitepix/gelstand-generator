@@ -1,15 +1,16 @@
 .group {
-  display: inline-flex;
+  display: flex;
   gap: 2px;
   padding: 2px;
   background: var(--bg-sunken);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius);
 }
 
 .option {
+  flex: 1;
   display: inline-flex;
   align-items: center;
-  gap: var(--gap-sm);
+  justify-content: center;
   height: 36px;
   padding: 0 14px;
   font: inherit;
@@ -17,14 +18,13 @@
   color: var(--text-muted);
   background: transparent;
   border: 0;
-  border-radius: var(--radius);
+  border-radius: 6px;
   cursor: pointer;
 }
 
 .option[data-selected] {
   color: var(--text);
   background: var(--bg);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .option:focus-visible {

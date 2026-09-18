@@ -4,12 +4,12 @@
   min-height: 100vh;
 }
 
-/* Колонка параметров: ширина фиксирована, содержимое прижато к верху. */
+/* Колонка параметров: ширина фиксирована, карточка стоит по центру высоты. */
 .column {
-  flex: 0 0 333px;
+  flex: 0 0 360px;
   display: flex;
   flex-direction: column;
-  gap: var(--gap-lg);
+  justify-content: center;
   padding: 12px;
 }
 
@@ -23,5 +23,6 @@
   .column {
     flex: none;
     width: 100%;
+    justify-content: flex-start;
   }
 }

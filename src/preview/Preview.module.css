@@ -1,5 +1,5 @@
-/* Превью занимает всю площадь справа от панели, поэтому ни рамки, ни
-   скругления у него нет: оно уходит под края окна. */
+/* Превью занимает всю площадь справа от панели: ни рамки, ни скругления, ни
+   своей заливки — сквозь сцену виден тёплый фон страницы. */
 .preview {
   flex: 1;
   min-width: 0;
@@ -10,7 +10,6 @@
   position: relative;
   flex: 1;
   min-width: 0;
-  background: var(--bg-sunken);
   overflow: hidden;
 }
 
@@ -32,7 +31,7 @@
   display: grid;
   place-items: center;
   color: var(--text-muted);
-  background: rgba(244, 244, 246, 0.7);
+  background: rgba(251, 246, 240, 0.7);
 }
 
 .placeholder {
@@ -45,12 +44,25 @@
   color: var(--text-muted);
 }
 
+/* Легенда к двум рамкам стола. Стоит на месте, а не под столом: стол
+   вращается вместе с моделью, и подпись за ним не угналась бы. */
+.legend {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 52px;
+  margin: 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
 /* Габарит показанной модели — строкой по низу сцены (ТЗ 11.4). */
 .caption {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 16px;
+  bottom: 24px;
   margin: 0;
   text-align: center;
   font-size: 13px;

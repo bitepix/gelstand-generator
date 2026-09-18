@@ -1,39 +1,56 @@
+/* Карточка параметров. Полупрозрачная: тёплый фон страницы просвечивает. */
 .panel {
   display: flex;
   flex-direction: column;
-  gap: var(--gap-md);
-  padding: 20px;
-  background: var(--bg);
-  border-radius: var(--radius);
+  gap: var(--gap-xl);
+  padding: var(--gap-lg);
+  background: var(--panel);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--panel-shadow);
 }
 
-.actions {
+/* Пронумерованный раздел: заголовок, поля, подсказка. */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-sm);
+}
+
+/* У раздела с принтером блоки крупнее, им нужен шаг побольше. */
+.section[data-wide] {
+  gap: var(--gap-md);
+}
+
+.heading {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Два поля в строку: ширина и глубина, Nx и Ny. У круглой формы поле одно
+   и занимает всю строку. */
+.row {
   display: flex;
   gap: var(--gap-sm);
 }
 
-.actions > *:first-child {
-  flex: 1;
+.hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-muted);
 }
 
-/* Тестовая подставка — ссылка, а не кнопка: это боковой ход, а не
-   основное действие панели (ТЗ 4.3). */
-.test {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-xs);
-}
-
+/* Тестовая подставка — ссылка внутри подсказки, а не отдельная кнопка:
+   это боковой ход, а не действие панели (ТЗ 4.3). */
 .testLink {
   padding: 0;
   font: inherit;
-  font-size: 14px;
-  text-align: left;
   color: var(--text);
   background: none;
   border: 0;
-  border-bottom: 1px solid var(--border);
-  align-self: flex-start;
+  border-bottom: 1px solid var(--text-muted);
   cursor: pointer;
 }
 
@@ -53,8 +70,11 @@
   cursor: not-allowed;
 }
 
-.hint {
-  margin: 0;
-  font-size: 13px;
-  color: var(--text-muted);
+.actions {
+  display: flex;
+  gap: var(--gap-sm);
+}
+
+.actions > *:first-child {
+  flex: 1;
 }

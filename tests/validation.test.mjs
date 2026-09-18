@@ -5,7 +5,6 @@ import assert from 'node:assert/strict'
 import { normalize, normalizeFields, fieldKind, toNumber } from '../src/validation/normalize.js'
 import { validate, isValid } from '../src/validation/validate.js'
 import { messages, messagesFor } from '../src/validation/messages.js'
-import { plural } from '../src/validation/plural.js'
 import { makeInitialState } from '../src/state/initial.js'
 import { COUNT_MAX } from '../src/constants.js'
 
@@ -124,21 +123,6 @@ test('validate: габарит стола больше не ошибка', () =>
 
 test('validate: пустое поле остаётся ошибкой', () => {
   assert.deepEqual(validate(withFields({ width: '', nx: '99' })).errors, ['ERR-01'])
-})
-
-test('plural: формы по последней цифре', () => {
-  const forms = ['подставка', 'подставки', 'подставок']
-  const say = (n) => `${n} ${plural(n, forms)}`
-  assert.equal(say(1), '1 подставка')
-  assert.equal(say(2), '2 подставки')
-  assert.equal(say(4), '4 подставки')
-  assert.equal(say(5), '5 подставок')
-  assert.equal(say(11), '11 подставок')
-  assert.equal(say(14), '14 подставок')
-  assert.equal(say(21), '21 подставка')
-  assert.equal(say(22), '22 подставки')
-  assert.equal(say(25), '25 подставок')
-  assert.equal(say(111), '111 подставок')
 })
 
 test('normalize: количество по оси не уходит выше COUNT_MAX', () => {

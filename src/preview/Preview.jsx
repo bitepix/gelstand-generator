@@ -14,7 +14,6 @@ import {
   AmbientLight,
   BufferAttribute,
   BufferGeometry,
-  Color,
   DirectionalLight,
   DoubleSide,
   Float32BufferAttribute,
@@ -48,11 +47,11 @@ const SPIN_IDLE = 2500
 
 /** Сцена, живущая между перерисовками React. */
 function createScene(canvas) {
-  const renderer = new WebGLRenderer({ canvas, antialias: true })
+  // alpha: сцена прозрачна, фон страницы виден сквозь канвас.
+  const renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
   const scene = new Scene()
-  scene.background = new Color(0xf4f4f6)
 
   const camera = new PerspectiveCamera(FOV, 1, 0.1, 5000)
   const controls = new OrbitControls(camera, canvas)
@@ -270,6 +269,11 @@ export function Preview({ model, status, caption, bed = null }) {
           </p>
         )}
 
+        {bed && (
+          <p className={styles.legend}>
+            стол принтера · пунктир — полезное поле, отступ 15 мм
+          </p>
+        )}
         {caption && <p className={styles.caption}>{caption}</p>}
       </div>
     </div>

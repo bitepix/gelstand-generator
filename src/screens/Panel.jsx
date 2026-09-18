@@ -1,8 +1,9 @@
 // Единственный экран приложения. ТЗ v5, разделы 2, 4, 6, 9, 10, 15, 19.
 //
-// Шагов больше нет: все параметры на виду сразу, превью живое. Поэтому и
-// экран один — карточка в левой колонке, а справа модель, которая
-// пересобирается после каждой завершённой правки.
+// Шагов нет: все параметры на виду сразу, превью живое. Панель разбита на три
+// пронумерованных раздела — размеры, сетка, принтер. Заголовок раздела
+// заменяет подписи полей, поэтому у самих полей видимой подписи нет, только
+// aria-label (см. Field).
 //
 // Ошибки показываются не на каждое нажатие, а после завершения ввода
 // (ТЗ 5.3). Иначе «19,» подсвечивалось бы красным прямо во время набора.
@@ -24,7 +25,6 @@ import { buttonState } from '../state/buttonState.js'
 import { paramsOf } from '../state/useGeneration.js'
 import { generate } from '../worker/index.js'
 import { PRINTERS, printerLabel } from '../printers.js'
-import { plural } from '../validation/plural.js'
 import { export3MF } from '../export/threemf.js'
 import { fileName } from '../export/fileName.js'
 import {
@@ -44,31 +44,25 @@ const ERRORS_ID = 'params-errors'
 // ширины и глубины (ТЗ 1.1).
 const SIZES = {
   rect: [
-    { field: 'width', label: 'Ширина, мм' },
-    { field: 'depth', label: 'Глубина, мм' },
+    { field: 'width', label: 'Ширина баночки, мм' },
+    { field: 'depth', label: 'Глубина баночки, мм' },
   ],
   round: [{ field: 'diameter', label: 'Диаметр баночки, мм' }],
 }
 
 const COUNTS = [
-  { field: 'nx', label: 'Количество по X' },
-  { field: 'ny', label: 'Количество по Y' },
+  { field: 'nx', label: 'Количество ячеек по X' },
+  { field: 'ny', label: 'Количество ячеек по Y' },
 ]
-
-/**
- * Сколько баночек даёт заданная сетка. Люди считают баночками, а не сеткой,
- * поэтому произведение написано словами — отдельного поля для него нет
- * (ТЗ 6.3). Пока сетка не задана целиком, считать нечего.
- */
-function jarsLine(fields) {
-  const count = toNumber(fields.nx) * toNumber(fields.ny)
-  if (!Number.isFinite(count) || count < 1) return null
-  return `Сетка на ${count} ${plural(count, ['баночку', 'баночки', 'баночек'])}`
-}
 
 const PRINTER_OPTIONS = PRINTERS.map((p) => ({ value: p.id, label: printerLabel(p) }))
 
-const LABEL = { download: 'Скачать', disabled: 'Скачать', loading: 'Скачать', retry: 'Повторить' }
+const LABEL = {
+  download: 'Скачать .3mf',
+  disabled: 'Скачать .3mf',
+  loading: 'Скачать .3mf',
+  retry: 'Повторить',
+}
 
 function save(blob, name) {
   const url = URL.createObjectURL(blob)
@@ -89,6 +83,12 @@ const sizesReady = (state) =>
     return Number.isFinite(value) && value <= SIZE_MAX
   })
 
+/** Сколько ячеек даёт заданная сетка. Пока она не задана целиком — ничего. */
+function cellCount(fields) {
+  const count = toNumber(fields.nx) * toNumber(fields.ny)
+  return Number.isFinite(count) && count >= 1 ? count : null
+}
+
 /** @param {{ state: object, dispatch: Function }} props */
 export function Panel({ state, dispatch }) {
   const [showErrors, setShowErrors] = useState(false)
@@ -101,7 +101,7 @@ export function Panel({ state, dispatch }) {
 
   const kind = buttonState(state)
   const busy = kind === 'loading'
-  const grid = jarsLine(state.fields)
+  const cells = cellCount(state.fields)
 
   const change = (field, value) => dispatch(setField(field, value))
   const commit = (field, value) => {
@@ -130,11 +130,28 @@ export function Panel({ state, dispatch }) {
   }
 
   const act = () => {
-    if (kind === 'download') return save(export3MF(state.model), fileName(state.fields, '3mf', state.shape))
+    if (kind === 'download') {
+      return save(export3MF(state.model), fileName(state.fields, '3mf', state.shape))
+    }
     // Повтор после технической ошибки: параметры проверяются заново (ТЗ 5.3).
     setShowErrors(true)
     if (validate(state).errors.length === 0) dispatch(generateStart())
   }
+
+  const field = ({ field: name, label }, suffix) => (
+    <Field
+      key={name}
+      field={name}
+      label={label}
+      suffix={suffix}
+      value={state.fields[name]}
+      error={showErrors && fields[name]}
+      disabled={busy}
+      describedBy={ERRORS_ID}
+      onChange={change}
+      onCommit={commit}
+    />
+  )
 
   return (
     <section className={styles.panel}>
@@ -144,72 +161,56 @@ export function Panel({ state, dispatch }) {
         onChange={(shape) => dispatch(setShape(shape))}
       />
 
-      <Select
-        label="Принтер"
-        placeholder="Выберите модель"
-        value={state.printer}
-        options={PRINTER_OPTIONS}
-        disabled={busy || state.noPrinter}
-        onChange={(id) => dispatch(setPrinter(id))}
-      />
-      <Checkbox
-        label="У меня нет принтера"
-        checked={state.noPrinter}
-        disabled={busy}
-        onChange={() => dispatch(toggleNoPrinter())}
-      />
-      {state.noPrinter && (
-        <Notice kind="offer">
-          Купить 3D-принтер можно в магазине{' '}
-          <a href="https://3d-outlet.com/" target="_blank" rel="noreferrer">
-            3d-outlet.com
-          </a>
-          , промокод <b>NAILMOD5</b> даёт 5% скидки.
-        </Notice>
-      )}
-
-      {SIZES[state.shape].map(({ field, label }) => (
-        <Field
-          key={field}
-          field={field}
-          label={label}
-          value={state.fields[field]}
-          error={showErrors && fields[field]}
-          disabled={busy}
-          describedBy={ERRORS_ID}
-          onChange={change}
-          onCommit={commit}
-        />
-      ))}
-
-      <div className={styles.test}>
-        <button
-          type="button"
-          className={styles.testLink}
-          disabled={busy || testing || !sizesReady(state)}
-          onClick={downloadTest}
-        >
-          {testing ? 'Готовим тестовую подставку…' : `Скачать тестовую подставку ${TEST_GRID} × ${TEST_GRID}`}
-        </button>
-        <p className={styles.hint}>Напечатайте и проверьте, как садится баночка.</p>
+      <div className={styles.section}>
+        <h2 className={styles.heading}>1. Введите размеры баночки</h2>
+        <div className={styles.row}>{SIZES[state.shape].map((row) => field(row, 'мм'))}</div>
+        <p className={styles.hint}>
+          Учитывайте погрешность 3D-печати: прибавьте к каждому размеру 0,2 – 0,4 мм.
+          Перед печатью скачайте{' '}
+          <button
+            type="button"
+            className={styles.testLink}
+            disabled={busy || testing || !sizesReady(state)}
+            onClick={downloadTest}
+          >
+            {testing ? 'тестовый файл…' : 'тестовый файл'}
+          </button>{' '}
+          для проверки
+        </p>
+        <ErrorBlock id="test-error" codes={testError ? [testError] : []} />
       </div>
-      <ErrorBlock id="test-error" codes={testError ? [testError] : []} />
 
-      {COUNTS.map(({ field, label }) => (
-        <Field
-          key={field}
-          field={field}
-          label={label}
-          value={state.fields[field]}
-          error={showErrors && fields[field]}
-          disabled={busy}
-          describedBy={ERRORS_ID}
-          onChange={change}
-          onCommit={commit}
+      <div className={styles.section}>
+        <h2 className={styles.heading}>2. Сетка</h2>
+        <div className={styles.row}>{COUNTS.map((row) => field(row))}</div>
+        {cells !== null && <p className={styles.hint}>Количество ячеек: {cells} шт.</p>}
+      </div>
+
+      <div className={styles.section} data-wide="">
+        <h2 className={styles.heading}>3. Принтер</h2>
+        <Select
+          label="Принтер"
+          placeholder="Выберите модель"
+          value={state.printer}
+          options={PRINTER_OPTIONS}
+          disabled={busy || state.noPrinter}
+          onChange={(id) => dispatch(setPrinter(id))}
         />
-      ))}
-
-      {grid && <p className={styles.hint}>{grid}</p>}
+        <Checkbox
+          label="У меня нет принтера"
+          checked={state.noPrinter}
+          disabled={busy}
+          onChange={() => dispatch(toggleNoPrinter())}
+        />
+        {state.noPrinter && (
+          <Notice kind="offer">
+            <b>5% скидка</b> по промокоду <b>NAILMOD5</b> в магазине{' '}
+            <a href="https://3d-outlet.com/" target="_blank" rel="noreferrer">
+              3d-outlet.com
+            </a>
+          </Notice>
+        )}
+      </div>
 
       <ErrorBlock id={ERRORS_ID} codes={visible} />
       <ErrorBlock

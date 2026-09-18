@@ -1,9 +1,9 @@
-/* Временное оформление. Заменяется по макетам Figma.
+/* Оформление по макету Figma «01_Ready_Desktop».
    Все компоненты берут цвета, отступы и радиусы только отсюда, поэтому
    подгонка под макеты — правка этого файла, а не обход разметки. */
 
 :root {
-  --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
   --text: #16161a;
   --text-muted: #6b6b76;
@@ -11,24 +11,30 @@
 
   --bg: #ffffff;
   --bg-sunken: #f4f4f6;
-  --border: #d6d6dc;
+  /* Карточка полупрозрачная: тёплый фон должен просвечивать. */
+  --panel: rgba(255, 255, 255, 0.5);
+  --panel-shadow: 0 4px 13px rgba(0, 0, 0, 0.12);
+  /* Тёплая граница под цвет фона, а не нейтральная серая. */
+  --border: #efeae5;
   --border-strong: #16161a;
 
-  --accent: #16161a;
-  --accent-hover: #33333a;
+  --accent: #040200;
+  --accent-hover: #2a2725;
   --danger: #b3261e;
   --danger-bg: #fdecea;
-  --offer-bg: #fdf3d3;
 
   --radius: 8px;
   --radius-lg: 12px;
 
   --gap-xs: 4px;
-  --gap-sm: 8px;
-  --gap-md: 12px;
-  --gap: 16px;
-  --gap-lg: 24px;
+  --gap-sm: 6px;
+  --gap-md: 8px;
+  --gap: 12px;
+  --gap-lg: 20px;
+  /* Расстояние между пронумерованными разделами панели. */
+  --gap-xl: 32px;
 
+  --field-height: 40px;
   --control-height: 44px;
   --focus-ring: 0 0 0 3px rgba(22, 22, 26, 0.18);
 }
@@ -41,5 +47,6 @@ body {
   margin: 0;
   font-family: var(--font);
   color: var(--text);
-  background: var(--bg-sunken);
+  /* Тёплая подложка на всю страницу: и под панелью, и под превью. */
+  background: #fbf6f0 url('/bg.jpg') center / cover no-repeat fixed;
 }
