@@ -31,7 +31,7 @@
   display: grid;
   place-items: center;
   color: var(--text-muted);
-  background: rgba(251, 246, 240, 0.7);
+  background: rgba(255, 255, 255, 0.6);
 }
 
 .placeholder {
@@ -41,19 +41,6 @@
   display: grid;
   place-items: center;
   font-size: 14px;
-  color: var(--text-muted);
-}
-
-/* Легенда к двум рамкам стола. Стоит на месте, а не под столом: стол
-   вращается вместе с моделью, и подпись за ним не угналась бы. */
-.legend {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 52px;
-  margin: 0;
-  text-align: center;
-  font-size: 11px;
   color: var(--text-muted);
 }
 

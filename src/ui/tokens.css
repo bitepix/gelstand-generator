@@ -7,19 +7,21 @@
 
   --text: #16161a;
   --text-muted: #6b6b76;
+  /* Подсказки под полями — светлее основного серого. */
+  --text-faint: #a2a2ac;
   --text-inverse: #ffffff;
 
   --bg: #ffffff;
-  --bg-sunken: #f4f4f6;
-  /* Карточка полупрозрачная: тёплый фон должен просвечивать. */
-  --panel: rgba(255, 255, 255, 0.5);
+  --bg-sunken: #e9eaef;
+  /* Карточка полупрозрачная: градиент страницы должен просвечивать. */
+  --panel: rgba(255, 255, 255, 0.7);
   --panel-shadow: 0 4px 13px rgba(0, 0, 0, 0.12);
   /* Тёплая граница под цвет фона, а не нейтральная серая. */
   --border: #efeae5;
   --border-strong: #16161a;
 
-  --accent: #040200;
-  --accent-hover: #2a2725;
+  --accent: #feb127;
+  --accent-hover: #e8a017;
   --danger: #b3261e;
   --danger-bg: #fdecea;
 
@@ -32,7 +34,7 @@
   --gap: 12px;
   --gap-lg: 20px;
   /* Расстояние между пронумерованными разделами панели. */
-  --gap-xl: 32px;
+  --gap-xl: 36px;
 
   --field-height: 40px;
   --control-height: 44px;
@@ -47,6 +49,8 @@ body {
   margin: 0;
   font-family: var(--font);
   color: var(--text);
-  /* Тёплая подложка на всю страницу: и под панелью, и под превью. */
-  background: #fbf6f0 url('/bg.jpg') center / cover no-repeat fixed;
+  /* Подложка на всю страницу: и под панелью, и под превью. Fixed — чтобы
+     градиент считался от окна, а не от высоты содержимого. */
+  background: linear-gradient(180deg, #e0e3ea 0%, #fdedd3 100%) fixed;
+  background-color: #fdedd3;
 }

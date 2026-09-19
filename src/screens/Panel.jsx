@@ -186,7 +186,7 @@ export function Panel({ state, dispatch }) {
         {cells !== null && <p className={styles.hint}>Количество ячеек: {cells} шт.</p>}
       </div>
 
-      <div className={styles.section} data-wide="">
+      <div className={styles.section}>
         <h2 className={styles.heading}>3. Принтер</h2>
         <Select
           label="Принтер"

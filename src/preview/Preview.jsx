@@ -269,11 +269,6 @@ export function Preview({ model, status, caption, bed = null }) {
           </p>
         )}
 
-        {bed && (
-          <p className={styles.legend}>
-            стол принтера · пунктир — полезное поле, отступ 15 мм
-          </p>
-        )}
         {caption && <p className={styles.caption}>{caption}</p>}
       </div>
     </div>

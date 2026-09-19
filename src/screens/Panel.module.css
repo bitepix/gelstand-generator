@@ -13,17 +13,12 @@
 .section {
   display: flex;
   flex-direction: column;
-  gap: var(--gap-sm);
-}
-
-/* У раздела с принтером блоки крупнее, им нужен шаг побольше. */
-.section[data-wide] {
   gap: var(--gap-md);
 }
 
 .heading {
   margin: 0;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text);
 }
@@ -37,9 +32,9 @@
 
 .hint {
   margin: 0;
-  font-size: 11px;
-  line-height: 1.45;
-  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-faint);
 }
 
 /* Тестовая подставка — ссылка внутри подсказки, а не отдельная кнопка:
@@ -47,7 +42,7 @@
 .testLink {
   padding: 0;
   font: inherit;
-  color: var(--accent);
+  color: inherit;
   text-decoration: underline;
   background: none;
   border: 0;
@@ -61,16 +56,13 @@
 }
 
 .testLink:disabled {
-  color: var(--text-muted);
   text-decoration-color: transparent;
   cursor: not-allowed;
 }
 
+/* Кнопки друг под другом во всю ширину панели. */
 .actions {
   display: flex;
+  flex-direction: column;
   gap: var(--gap-sm);
-}
-
-.actions > *:first-child {
-  flex: 1;
 }
